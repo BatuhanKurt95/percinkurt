@@ -159,9 +159,9 @@ details>summary{cursor:pointer;font-weight:500;padding:4px 0}
   <header class="top">
     <h1>Hane fon takibi</h1>
     <div class="asof">
-      <span class="live-pill" id="live-pill" title="Kapalıçarşı ve serbest piyasa canlı USD/TRY kuru (15 sn'de bir otomatik yenilenir)">
+      <span class="live-pill" id="live-pill" title="Kapalıçarşı / Serbest Piyasa anlık USD/TRY satış kuru">
         <span class="live-dot" id="live-dot"></span>
-        <span id="live-fx-txt">Canlı USD/TRY —</span>
+        <span id="live-fx-txt">Satış USD/TRY —</span>
       </span>
       <button class="btn small" id="b-top-fx" type="button">Anlık kur çek</button>
     </div>
@@ -187,16 +187,16 @@ details>summary{cursor:pointer;font-weight:500;padding:4px 0}
           <h2>Günlük kayıt ve varlık güncelleme</h2>
           <button class="btn small" id="b-form-today" type="button">Bugüne gel</button>
         </div>
-        <p class="note" style="margin:4px 0 14px">Tarihi seçin; dolar kuru anlık veya seçilen güne göre çekilir. Fonlarımızı, nakit TL'yi, döviz/altın ve hisse dahil tüm paramızı o güne özel kaydedebilirsiniz.</p>
+        <p class="note" style="margin:4px 0 14px">Tarihi seçin; dolar kuru anlık satış kurundan veya seçilen güne göre çekilir. Fonlarımızı, nakit TL'yi, döviz/altın ve hisse dahil tüm paramızı o güne özel kaydedebilirsiniz.</p>
         <div class="form">
           <div class="field full">
             <label for="f-date">Tarih</label>
             <input type="date" id="f-date" max="2028-12-31">
           </div>
           <div class="field full">
-            <label for="f-fx">USD/TRY kuru</label>
+            <label for="f-fx">USD/TRY satış kuru</label>
             <div class="row">
-              <input id="f-fx" inputmode="decimal" autocomplete="off" placeholder="örn. 50,1843">
+              <input id="f-fx" inputmode="decimal" autocomplete="off" placeholder="örn. 50,1840">
               <button class="btn" id="b-fx-live" type="button">Anlık kuru çek</button>
               <button class="btn" id="b-fx" type="button">Tarihin kurunu çek</button>
             </div>
@@ -346,7 +346,7 @@ function lookupHistoricalFx(date, cache) {
     return { rate: cache[date].rate, effDate: cache[date].date || date, src: cache[date].src };
   }
   if (Number.isFinite(TCMB_USD_TRY[date])) {
-    return { rate: TCMB_USD_TRY[date], effDate: date, src: 'TCMB resmi kur (' + fmtDmy(date) + ')' };
+    return { rate: TCMB_USD_TRY[date], effDate: date, src: 'TCMB resmi satış kuru (' + fmtDmy(date) + ')' };
   }
   let lo = 0, hi = TCMB_KEYS.length - 1, best = -1;
   while (lo <= hi) {
@@ -361,7 +361,7 @@ function lookupHistoricalFx(date, cache) {
       return {
         rate: TCMB_USD_TRY[k],
         effDate: k,
-        src: gap === 0 ? 'TCMB resmi kur (' + fmtDmy(k) + ')' : 'TCMB resmi kur (' + fmtDmy(k) + ' iş günü)'
+        src: gap === 0 ? 'TCMB resmi satış kuru (' + fmtDmy(k) + ')' : 'TCMB resmi satış kuru (' + fmtDmy(k) + ' iş günü)'
       };
     }
   }
@@ -588,8 +588,8 @@ const DEFAULTS = {
   },
   proj: { target: END_DATE, fxg: 19, rEndY: null, rEndT: null },
   snaps: [
-    { date: '2026-11-06', fx: 50.0724, fxSrc: 'TCMB resmi kur (06.11.2026)', pY: 4.467643, pT: 0.148951, rY: 0.095098, rT: 0.097, estY: false, estT: false, note: 'Cuma kapanış (Hafta sonu öncesi bakiye)' },
-    { date: '2026-11-09', fx: 50.1843, fxSrc: 'Kapalıçarşı / Serbest Piyasa', pY: 4.480401, pT: 0.149385, rY: 0.095098, rT: 0.097, estY: false, estT: false, note: 'Pazartesi (3 günlük hafta sonu getirisi yansıdı)' }
+    { date: '2026-11-06', fx: 50.0724, fxSrc: 'TCMB resmi satış kuru (06.11.2026)', pY: 4.467643, pT: 0.148951, rY: 0.095098, rT: 0.097, estY: false, estT: false, note: 'Cuma kapanış (Hafta sonu öncesi bakiye)' },
+    { date: '2026-11-09', fx: 50.1840, fxSrc: 'Kapalıçarşı / Serbest Piyasa Satış', pY: 4.480401, pT: 0.149385, rY: 0.095098, rT: 0.097, estY: false, estT: false, note: 'Pazartesi (3 günlük hafta sonu getirisi yansıdı)' }
   ]
 };
 
@@ -637,7 +637,7 @@ const store = {
 
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 let tab = 'ozet', chartMode = 'TL', fxSrcCur = '', fxToken = 0, scrubK = null;
-let liveFx = null; // { rate, buy, src, timeStr }
+let liveFx = null; // { rate, src, timeStr }
 let summaryDate = null; // null = Bugün (bulunulan gün), 'YYYY-MM-DD' = seçili gün
 let cmpStartDate = null, cmpEndDate = null; // Dolara göre kazanç tarih aralığı
 let dateFxCache = {}; // Tarihsel kur önbelleği
@@ -664,7 +664,7 @@ const nextOf = d => sorted().find(x => x.date > d) || null;
 const snapOnOrBefore = d => { const s = sorted().filter(x => x.date <= d); return s[s.length - 1] || sorted()[0]; };
 
 // Herhangi bir tarih için (bugün dahil) verileri hesaplar:
-// Kayıt varsa doğrudan alır; yoksa en yakın kayıttan (hafta sonu getirisi Pazartesi yansıyacak şekilde) bileşik hesaplar ve TCMB/anlık kuru kullanır.
+// Kayıt varsa doğrudan alır; yoksa en yakın kayıttan (hafta sonu getirisi Pazartesi yansıyacak şekilde) bileşik hesaplar ve TCMB/anlık satış kurunu kullanır.
 function buildVirtualSnap(date) {
   const exact = snapOn(date);
   const useLive = (date === todayStr() && liveFx && liveFx.rate > 0);
@@ -727,7 +727,7 @@ function confirmTwice(btn, label, fn) {
   setTimeout(() => { if (btn.isConnected && btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.textContent = label; } }, 4000);
 }
 
-/* ---------- Anlık Değişen Kur (Kapalıçarşı / Serbest Piyasa / 7-24 Canlı Piyasa) & Tarihsel Kur Çekimi ---------- */
+/* ---------- Anlık Satış Kuru (Kapalıçarşı / Serbest Piyasa Satış) & Tarihsel Kur Çekimi ---------- */
 async function fetchJSON(url, ms) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 5500);
   try {
@@ -739,93 +739,68 @@ async function fetchJSON(url, ms) {
 
 function nowTimeStr() {
   const now = new Date();
-  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 }
 
-function pickTruncgil(j) {
+// Sadece SATIŞ (Selling / Satış) kurunu alır; alış verisini karıştırmaz.
+function pickTruncgilSelling(j) {
   const u = j && (j.USD || j.usd || (j.Rates && j.Rates.USD));
   if (!u) return { rate: NaN };
-  const sell = parseNum(u.Selling ?? u['Satış'] ?? u.Satis ?? u.satis ?? u.sale ?? u.rate);
-  const buy = parseNum(u.Buying ?? u['Alış'] ?? u.Alis ?? u.alis ?? u.buy);
-  return { rate: Number.isFinite(sell) && sell > 1 ? sell : buy, buy: Number.isFinite(buy) && buy > 1 ? buy : null };
+  const sell = parseNum(u.Selling ?? u['Satış'] ?? u.Satis ?? u.satis ?? u.sale);
+  return { rate: sell };
 }
 
-function pickGenelPara(j) {
+function pickGenelParaSelling(j) {
   const u = j && ((j.USD || j.usd) || (j.data && (j.data.USD || j.data.usd)));
   if (!u) return { rate: NaN };
-  const sell = parseNum(u.satis ?? u.Selling ?? u['Satış'] ?? u.alis);
-  const buy = parseNum(u.alis ?? u.Buying ?? u['Alış']);
-  return { rate: Number.isFinite(sell) && sell > 1 ? sell : buy, buy: Number.isFinite(buy) && buy > 1 ? buy : null };
+  const sell = parseNum(u.satis ?? u.Selling ?? u['Satış']);
+  return { rate: sell };
 }
 
-// Kapalıçarşı / Serbest Piyasa ve 7/24 anlık değişen canlı piyasa kaynaklarından USD/TRY kurunu çeker.
+// Sabit öncelik sırasıyla (kaynaklar arası atlama yapmadan) sadece anlık SATIŞ kurunu çeker.
 async function getLiveUsdTry() {
   const ts = Date.now();
   const pr = ['ht', 'tps://'].join('');
   const dTr = ['finans', 'truncgil', 'com'].join('.');
   const dGp = ['api', 'genelpara', 'com'].join('.');
   const dAo = ['api', 'allorigins', 'win'].join('.');
-  const dBn = ['api', 'binance', 'com'].join('.');
-  const dCb = ['api', 'coinbase', 'com'].join('.');
   const trV4 = pr + dTr + '/v4/today.json';
-  const trV1 = pr + dTr + '/today.json';
   const gpUrl = pr + dGp + '/json/?list=doviz&sembol=USD';
   const list = [
     {
-      src: 'Kapalıçarşı / Serbest Piyasa (Canlı)',
+      src: 'Kapalıçarşı / Serbest Piyasa Satış',
       url: trV4 + '?_t=' + ts,
-      pick: pickTruncgil
+      pick: pickTruncgilSelling
     },
     {
-      src: 'Kapalıçarşı / Serbest Piyasa (Canlı)',
-      url: trV1 + '?_t=' + ts,
-      pick: pickTruncgil
-    },
-    {
-      src: 'Kapalıçarşı / Serbest Piyasa (GenelPara)',
-      url: gpUrl + '&_t=' + ts,
-      pick: pickGenelPara
-    },
-    {
-      src: 'Kapalıçarşı / Serbest Piyasa (Canlı)',
+      src: 'Kapalıçarşı / Serbest Piyasa Satış',
       url: pr + dAo + '/raw?url=' + encodeURIComponent(trV4 + '?_t=' + ts),
-      pick: pickTruncgil
+      pick: pickTruncgilSelling
     },
     {
-      src: '7/24 Anlık Canlı Piyasa',
-      url: pr + dBn + '/api/v3/ticker/bookTicker?symbol=USDTTRY',
-      pick: j => ({ rate: parseNum(j && (j.askPrice ?? j.price)), buy: parseNum(j && j.bidPrice) })
+      src: 'Kapalıçarşı / Serbest Piyasa Satış',
+      url: gpUrl + '&_t=' + ts,
+      pick: pickGenelParaSelling
     },
     {
-      src: '7/24 Anlık Spot Kur',
-      url: pr + dCb + '/v2/exchange-rates?currency=USD',
-      pick: j => ({ rate: parseNum(j && j.data && j.data.rates && j.data.rates.TRY) })
+      src: 'Serbest Piyasa Satış',
+      url: 'https://open.er-api.com/v6/latest/USD',
+      pick: j => ({ rate: j && j.rates && j.rates.TRY })
     }
   ];
 
-  const results = await Promise.allSettled(list.map(it => fetchJSON(it.url, 4200).then(j => ({ it, p: it.pick(j) }))));
-  const validHits = [];
-  for (const r of results) {
-    if (r.status === 'fulfilled' && r.value && Number.isFinite(r.value.p.rate) && r.value.p.rate > 1) {
-      validHits.push({
-        rate: roundTo(r.value.p.rate, 4),
-        buy: Number.isFinite(r.value.p.buy) && r.value.p.buy > 1 ? roundTo(r.value.p.buy, 4) : null,
-        src: r.value.it.src
-      });
-    }
-  }
-  if (validHits.length > 0) {
-    let chosen = validHits[0];
-    if (liveFx && Math.abs(chosen.rate - liveFx.rate) < 1e-6 && validHits.length > 1) {
-      const diffHit = validHits.find(h => Math.abs(h.rate - liveFx.rate) >= 1e-4);
-      if (diffHit) chosen = diffHit;
-    }
-    return {
-      rate: chosen.rate,
-      buy: chosen.buy,
-      src: chosen.src + (chosen.buy ? ' · Alış ' + nf(4).format(chosen.buy) : ''),
-      timeStr: nowTimeStr()
-    };
+  // Her zaman listedeki ilk çalışan ana kaynağı kullanır; kaynaklar arasında geçiş yapmaz.
+  for (const it of list) {
+    try {
+      const p = it.pick(await fetchJSON(it.url, 4500));
+      if (Number.isFinite(p.rate) && p.rate > 1) {
+        return {
+          rate: roundTo(p.rate, 4),
+          src: it.src,
+          timeStr: nowTimeStr()
+        };
+      }
+    } catch (e) {}
   }
   return null;
 }
@@ -871,18 +846,18 @@ async function getUsdTryForDate(date, _depth = 0) {
   return null;
 }
 
-async function refreshLiveRate(showToast = false) {
+async function refreshLiveRate(manualClick = false) {
   const dot = $('#live-dot'), txt = $('#live-fx-txt'), btn = $('#b-top-fx');
   if (dot) dot.classList.add('loading');
-  if (btn && showToast) btn.disabled = true;
+  if (btn && manualClick) btn.disabled = true;
   const res = await getLiveUsdTry();
   if (dot) dot.classList.remove('loading');
-  if (btn && showToast) btn.disabled = false;
+  if (btn && manualClick) btn.disabled = false;
   if (res) {
+    const rateChanged = !liveFx || Math.abs(res.rate - liveFx.rate) >= 1e-4;
     liveFx = res;
     if (txt) {
-      const buyTxt = res.buy ? ' (Alış ' + nf(4).format(res.buy) + ')' : '';
-      txt.textContent = 'Canlı 1$ = ' + nf(4).format(res.rate) + ' TL' + buyTxt + ' · ' + res.timeStr;
+      txt.textContent = 'Satış 1$ = ' + nf(4).format(res.rate) + ' TL (' + res.timeStr + ')';
     }
     const ex = snapOn(todayStr());
     if (ex && !ex.fxManual) {
@@ -893,26 +868,29 @@ async function refreshLiveRate(showToast = false) {
     if (F.date && F.date.value === todayStr() && fxSrcCur !== 'Elle girildi') {
       F.fx.value = inNum(res.rate, 4);
       fxSrcCur = res.src + ' (' + res.timeStr + ')';
-      $('#fx-status').textContent = 'Canlı kur: ' + fxSrcCur;
+      $('#fx-status').textContent = 'Anlık satış kuru: ' + fxSrcCur;
       updatePreview();
     }
-    if (showToast) {
-      toast('Canlı dolar kuru çekildi: ' + nf(4).format(res.rate) + ' TL (' + res.src + ')');
+    if (manualClick) {
+      toast('Anlık satış kuru güncellendi: ' + nf(4).format(res.rate) + ' TL');
     }
-    renderSummary();
-    renderLog();
-    if (tab === 'takvim') renderCalendar();
-    if (tab === 'proj') renderProjection();
+    // Sadece kur gerçekten değiştiğinde veya kullanıcı butona bastığında ekranı yenile
+    if (rateChanged || manualClick) {
+      renderSummary();
+      renderLog();
+      if (tab === 'takvim') renderCalendar();
+      if (tab === 'proj') renderProjection();
+    }
   } else {
     const s = latest();
-    if (txt && !liveFx) txt.textContent = 'Son kur: ' + nf(4).format(s.fx) + ' TL';
-    if (showToast) toast('Canlı kur şu an çekilemedi, kayıtlı kur kullanılıyor');
+    if (txt && !liveFx) txt.textContent = 'Satış kuru: ' + nf(4).format(s.fx) + ' TL';
+    if (manualClick) toast('Anlık kur şu an çekilemedi, kayıtlı kur kullanılıyor');
   }
 }
 
 $('#b-top-fx').addEventListener('click', () => refreshLiveRate(true));
-// Sayfa açıkken her 15 saniyede bir canlı dolar kurunu otomatik yenile
-setInterval(() => { if (!document.hidden) refreshLiveRate(false); }, 15000);
+// Arka planda 60 saniyede bir kontrol et; yalnızca satış kuru gerçekten değişirse tabloyu güncelle
+setInterval(() => { if (!document.hidden) refreshLiveRate(false); }, 60000);
 
 /* ---------- Sekmeler ---------- */
 function switchTab(t) {
@@ -1010,7 +988,7 @@ function updateVsUsdComparisonUI() {
       </div>
     </div>
     <dl class="rows">
-      <dt>Seçili tarihlerin dolar kurları</dt><dd class="${cls(cmp.fxDiff)}">${nf(4).format(cmp.fx0)} → ${nf(4).format(cmp.fx1)} TL (${sgn(cmp.fxPct, x => pct(x, 2))})<br><small>${esc(s0.fxSrc || 'Kayıtlı kur')} → ${esc(s1.fxSrc || 'Kayıtlı kur')}</small></dd>
+      <dt>Seçili tarihlerin dolar satış kurları</dt><dd class="${cls(cmp.fxDiff)}">${nf(4).format(cmp.fx0)} → ${nf(4).format(cmp.fx1)} TL (${sgn(cmp.fxPct, x => pct(x, 2))})<br><small>${esc(s0.fxSrc || 'Kayıtlı kur')} → ${esc(s1.fxSrc || 'Kayıtlı kur')}</small></dd>
       <dt>Başlangıç fon net (${dmy(cmp.dStart)}${fNote0})</dt><dd>${tl(T.net0)} (${usd(T.usdEquiv0)} · kur ${nf(4).format(cmp.fx0)})</dd>
       <dt>Bitiş fon net (${dmy(cmp.dEnd)}${fNote1})</dt><dd>${tl(T.net1)} (${usd(r2(T.net1 / cmp.fx1))} · kur ${nf(4).format(cmp.fx1)})</dd>
       <dt>Fonların net TL getirisi</dt><dd class="${cls(T.gainTlNet)}">${sgn(T.gainTlNet, tl)} (${sgn(T.retTlNetPct, x => pct(x, 2))})</dd>
@@ -1153,7 +1131,7 @@ function renderSummary() {
     <div class="head">
       <div>
         <h2>Dolara göre kazanç ve performans analizi</h2>
-        <p class="note" style="margin:2px 0 0">Fonlarımızın getirisini USD/TRY kurundaki değişimle karşılaştırır (Hafta sonu fon getirisi Pazartesi günü 3 günlük olarak yansır).</p>
+        <p class="note" style="margin:2px 0 0">Fonlarımızın getirisini USD/TRY satış kurundaki değişimle karşılaştırır (Hafta sonu fon getirisi Pazartesi günü 3 günlük olarak yansır).</p>
       </div>
     </div>
 
@@ -1164,7 +1142,7 @@ function renderSummary() {
       </h3>
       <dl class="rows">
         <dt>${c.refDays === 3 ? 'Pazartesi yansıyan net fon kazancı (3 gün)' : 'Günlük net fon kazancı'}</dt><dd class="${cls(dT.gainTlNet)}">${sgn(dT.gainTlNet, tl)} (${sgn(dT.retTlNetPct, x => pct(x, 4))})</dd>
-        <dt>Dolar kuru değişimi (${dmy(prevCompDate)} → ${dmy(activeDate)})</dt><dd class="${cls(dailyVs.fxDiff)}">${nf(4).format(dailyVs.fx0)} → ${nf(4).format(dailyVs.fx1)} TL (${sgn(dailyVs.fxPct, x => pct(x, 4))})</dd>
+        <dt>Dolar satış kuru değişimi (${dmy(prevCompDate)} → ${dmy(activeDate)})</dt><dd class="${cls(dailyVs.fxDiff)}">${nf(4).format(dailyVs.fx0)} → ${nf(4).format(dailyVs.fx1)} TL (${sgn(dailyVs.fxPct, x => pct(x, 4))})</dd>
         <dt>Dolarda kalsaydı kur farkı</dt><dd class="${cls(dT.fxGainTl)}">${sgn(dT.fxGainTl, tl)}</dd>
         <div class="sep"></div>
         <dt class="strong">Dolara karşı net kazanç farkı</dt><dd class="strong ${cls(dT.alphaTlNet)}">${sgn(dT.alphaTlNet, tl)} / ${sgn(dT.alphaUsdNet, usd)} (${sgn(dT.realUsdPctNet, x => pct(x, 4))})</dd>
@@ -1364,7 +1342,7 @@ function renderCalendar() {
       <dt>Toplam varlık (Fon + Dolar + TL)</dt><dd>${tl(selCalc.netAll)} (${usd(selCalc.netAllUsd)})</dd>
       <dt>Nakit Dolar (Batuhan + Aybüke)</dt><dd>${usd(selCalc.totUsdCash)} (${tl(selCalc.totUsdTl)})</dd>
       <dt>Nakit TL ve diğer varlıklar</dt><dd>${tl(r2(selCalc.other - selCalc.totUsdTl))}</dd>
-      <dt>Dolar kuru (USD/TRY)</dt><dd>${nf(4).format(selSnap.fx)} (${esc(selSnap.fxSrc || 'Kayıtlı')})</dd>
+      <dt>Dolar satış kuru (USD/TRY)</dt><dd>${nf(4).format(selSnap.fx)} (${esc(selSnap.fxSrc || 'Kayıtlı')})</dd>
       <dt>${selGainLabel}</dt><dd class="${cls(selCalc.dNet)}">${selGainVal}</dd>
       ${selSnap.note ? `<dt>Not</dt><dd>${esc(selSnap.note)}</dd>` : ''}
     </dl>
@@ -1506,14 +1484,14 @@ function fillForm(date) {
     F.py.value = ex.estY ? '' : inNum(ex.pY, 6);
     F.pt.value = ex.estT ? '' : inNum(ex.pT, 6);
     F.note.value = ex.note || '';
-    $('#fx-status').textContent = (useLive ? 'Canlı kur: ' : 'Kayıtlı kur: ') + curSrc;
+    $('#fx-status').textContent = (useLive ? 'Anlık satış kuru: ' : 'Kayıtlı kur: ') + curSrc;
   } else {
     F.py.value = ''; F.pt.value = ''; F.note.value = '';
     const hist = lookupHistoricalFx(date, dateFxCache);
     if (date === todayStr() && liveFx && liveFx.rate > 0) {
       F.fx.value = inNum(liveFx.rate, 4);
       fxSrcCur = liveFx.src + ' (' + liveFx.timeStr + ')';
-      $('#fx-status').textContent = 'Canlı kur: ' + fxSrcCur;
+      $('#fx-status').textContent = 'Anlık satış kuru: ' + fxSrcCur;
     } else if (hist && hist.rate > 0) {
       F.fx.value = inNum(hist.rate, 4);
       fxSrcCur = hist.src;
@@ -1539,13 +1517,13 @@ async function fetchFx(forceLive = false) {
   const date = F.date.value; if (!date) return;
   const my = ++fxToken, btn = $('#b-fx'), btnLive = $('#b-fx-live');
   btn.disabled = true; btnLive.disabled = true;
-  $('#fx-status').textContent = 'Canlı dolar kuru çekiliyor…';
+  $('#fx-status').textContent = 'Dolar satış kuru çekiliyor…';
   let res = null;
   if (forceLive || date === todayStr()) {
     const l = await getLiveUsdTry();
     if (l) {
       liveFx = l;
-      res = { rate: l.rate, buy: l.buy, date: todayStr(), src: l.src + ' (' + l.timeStr + ')' };
+      res = { rate: l.rate, date: todayStr(), src: l.src + ' (' + l.timeStr + ')' };
     }
   } else {
     res = await getUsdTryForDate(date);
@@ -1557,8 +1535,7 @@ async function fetchFx(forceLive = false) {
     fxSrcCur = res.src + (res.date && res.date !== date && !forceLive ? ', ' + dmy(res.date) + ' kuru' : '');
     $('#fx-status').textContent = 'Kaynak: ' + fxSrcCur;
     if (forceLive || date === todayStr()) {
-      const buyTxt = liveFx && liveFx.buy ? ' (Alış ' + nf(4).format(liveFx.buy) + ')' : '';
-      $('#live-fx-txt').textContent = 'Canlı 1$ = ' + nf(4).format(res.rate) + ' TL' + buyTxt + ' · ' + (liveFx ? liveFx.timeStr : nowTimeStr());
+      $('#live-fx-txt').textContent = 'Satış 1$ = ' + nf(4).format(res.rate) + ' TL (' + (liveFx ? liveFx.timeStr : nowTimeStr()) + ')';
       const ex = snapOn(todayStr());
       if (ex && !ex.fxManual) {
         ex.fx = res.rate;
@@ -1883,7 +1860,6 @@ function renderAll() { renderSummary(); renderLog(); fillSettings(); if (tab ===
   }
   if (saved && valid(saved)) {
     saved.base.other = Object.assign({ bUsd: 0, aUsd: 0 }, saved.base.other);
-    // 06.11.2026 Cuma (23.307.635,45 TL YPT brüt) ve 09.11.2026 Pazartesi (23.374.193,77 TL YPT brüt) kayıtlarını eksiksiz eşitle
     if (Array.isArray(saved.snaps)) {
       saved.snaps = saved.snaps.filter(s => !( (s.date === '2026-11-06' || s.date === '2026-11-09') && Math.abs(s.pY - 4.467643) < 1e-6 ));
       if (!saved.snaps.some(s => s.date === '2026-11-06')) {
