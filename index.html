@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hane fon takibi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#ECEFF3; --surface:#FFFFFF; --sunk:#F4F6F8; --ink:#17202A; --muted:#5B6776; --line:#D2D9E0;
+  --b:#2350A0; --b-soft:#D9E3F4; --a:#AF2F3C; --a-soft:#F4DCDF; --gain:#15774A; --loss:#AF2F3C;
+  --font:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --paper:#0D1217; --surface:#151C24; --sunk:#1B242E; --ink:#E5EBF0; --muted:#97A3B1; --line:#2A3541;
+    --b:#80A6EE; --b-soft:#22324E; --a:#EC808B; --a-soft:#47242B; --gain:#57C792; --loss:#EC808B;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:780px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-inset-bottom,0px))}
+header.top{padding:calc(18px + env(safe-area-inset-top,0px)) 0 4px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:21px;font-weight:600;margin:0;letter-spacing:-.01em}
+.asof{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;color:var(--ink);font-weight:500}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--gain);display:inline-block}
+.live-dot.loading{background:var(--b);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+nav.tabs{position:sticky;top:0;z-index:10;background:var(--paper);padding:calc(8px + env(safe-area-inset-top,0px)) 0 10px}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:500;padding:8px 2px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);outline:1px solid var(--line)}
+button,input,select{font:inherit}
+:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px}
+.hero{border-radius:20px;padding:20px 18px 18px}
+.today-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.today-title{display:flex;flex-direction:column;gap:2px}
+.today-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--b)}
+.today-date{font-size:16px;font-weight:600;color:var(--ink)}
+.today-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.label{color:var(--muted);font-size:13px;margin:0}
+.big{font-size:clamp(28px,8vw,40px);font-weight:600;letter-spacing:-.02em;line-height:1.15;margin:4px 0 2px}
+.usd{font-size:17px;font-weight:500;margin:0}
+.usd small,.note{color:var(--muted);font-size:13px;font-weight:400}
+.split{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:16px 0 10px;background:var(--sunk)}
+.split span{display:block;height:100%}
+.hb{background:repeating-linear-gradient(135deg,var(--b) 0 2px,var(--b-soft) 2px 6px)}
+.ha{background:repeating-linear-gradient(135deg,var(--a) 0 2px,var(--a-soft) 2px 6px)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin:0;padding:0;list-style:none;font-size:13px}
+.legend li{display:flex;flex-direction:column}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.legend b{font-weight:500}
+.delta{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14px}
+.pos{color:var(--gain)} .neg{color:var(--loss)}
+.daily{display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px}
+.daily div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+@media (min-width:560px){.daily{grid-template-columns:repeat(3,1fr);gap:8px}.daily div{display:block;padding:10px 12px}}
+.daily p{margin:0}
+.daily .v{font-weight:600;font-size:15px}
+.people{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+@media (min-width:640px){.people{grid-template-columns:1fr 1fr}}
+.person{margin-top:0;border-left-width:4px}
+.person.b{border-left-color:var(--b)} .person.a{border-left-color:var(--a)}
+.person h2,.panel h2{font-size:16px;font-weight:600;margin:0}
+.person .sub{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+dl.rows{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:0;font-size:14px}
+dl.rows dt{color:var(--muted)}
+dl.rows dd{margin:0;text-align:right}
+dl.rows .strong{font-weight:600}
+dl.rows .sep{grid-column:1/-1;border-top:1px solid var(--line);margin:4px 0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form .full{grid-column:1/-1}
+.form .sec-title{grid-column:1/-1;font-size:13.5px;font-weight:600;color:var(--ink);margin:6px 0 -2px;padding-top:10px;border-top:1px solid var(--line)}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--sunk);color:var(--ink);font-size:16px;min-height:44px}
+.field input:focus{border-color:var(--b);outline:none;box-shadow:0 0 0 2px var(--b-soft)}
+.field .hint{font-size:12px;color:var(--muted);margin-top:3px;min-height:1em}
+.row{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.row input{flex:1;min-width:140px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;font-weight:500;cursor:pointer;min-height:44px;white-space:nowrap}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink);width:100%}
+.btn.small{min-height:32px;padding:5px 10px;font-size:12.5px;border-radius:8px}
+.btn.danger{color:var(--loss)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.preview{background:var(--sunk);border-radius:12px;padding:12px 14px;margin-top:4px}
+.preview p{margin:0}
+.err{color:var(--loss);font-size:13px}
+details{margin-top:12px}
+details>summary{cursor:pointer;font-weight:500;padding:4px 0}
+.chartbox{position:relative;margin-top:8px}
+.chartbox svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.readout{background:var(--sunk);border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;flex-wrap:wrap;gap:2px 16px}
+.readout .d{flex-basis:100%;font-weight:600}
+.toggle{display:inline-grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.toggle button{border:0;background:transparent;color:var(--muted);padding:5px 14px;cursor:pointer;font-weight:500}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ms{border-top:1px solid var(--line);margin:0}
+.ms:first-of-type{border-top:0}
+.ms summary{display:grid;grid-template-columns:auto 1fr;gap:0 12px;padding:10px 0;list-style:none}
+.ms summary::-webkit-details-marker{display:none}
+.ms summary .r{text-align:right}
+.ms summary .r small{display:block;color:var(--muted);font-size:12.5px}
+.ms dl{padding:0 0 12px}
+.log{border-top:1px solid var(--line);padding:12px 0}
+.log:first-child{border-top:0;padding-top:0}
+.log .head p{margin:0;font-weight:600}
+.log .meta{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+.tag{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:4px;color:var(--muted)}
+.tag.live{border-color:var(--b);color:var(--b)}
+/* Dolara Göre Kazanç Bölümü */
+.vs-sub{background:var(--sunk);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-top:12px}
+.vs-sub h3{font-size:13.5px;font-weight:600;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.vs-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+@media (max-width:480px){.vs-controls{grid-template-columns:1fr}}
+.vs-controls .field input{min-height:38px;padding:6px 10px;font-size:14px;background:var(--surface)}
+.vs-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.vs-banner{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.vs-banner .big-diff{font-size:19px;font-weight:600}
+.vs-cards{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+@media (min-width:580px){.vs-cards{grid-template-columns:1fr 1fr}}
+.vs-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;border-left:3px solid var(--line)}
+.vs-card.b{border-left-color:var(--b)}
+.vs-card.a{border-left-color:var(--a)}
+.vs-card h4{font-size:13.5px;font-weight:600;margin:0 0 6px}
+/* Takvim */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.cal-title{font-size:16px;font-weight:600;margin:0}
+.cal-whead{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-cell{min-height:68px;border:1px solid var(--line);border-radius:9px;padding:5px 6px;background:var(--sunk);display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;text-align:left;color:var(--ink);transition:border-color .15s}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
+.cal-cell.has-snap{background:var(--surface);border-color:var(--b)}
+.cal-cell.is-today{box-shadow:inset 0 0 0 1.5px var(--gain)}
+.cal-cell.is-sel{outline:2px solid var(--ink);outline-offset:1px}
+.cal-cell .dnum{font-size:12.5px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.cal-cell .dnum .dot{width:6px;height:6px;border-radius:50%;background:var(--b)}
+.cal-cell .dval{font-size:10.5px;line-height:1.25;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-cell.has-snap .dval{color:var(--ink);font-weight:500}
+@media (max-width:480px){
+  .cal-cell{min-height:54px;padding:4px}
+  .cal-cell .dval{font-size:9.5px}
+}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
+.toast.on{opacity:1}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Hane fon takibi</h1>
+    <div class="asof">
+      <span class="live-pill" id="live-pill" title="Kapalıçarşı ve serbest piyasa canlı USD/TRY kuru (15 sn'de bir otomatik yenilenir)">
+        <span class="live-dot" id="live-dot"></span>
+        <span id="live-fx-txt">Canlı USD/TRY —</span>
+      </span>
+      <button class="btn small" id="b-top-fx" type="button">Anlık kur çek</button>
+    </div>
+  </header>
+  <nav class="tabs" aria-label="Bölümler">
+    <div class="seg" role="tablist">
+      <button role="tab" data-tab="ozet" aria-selected="true">Özet</button>
+      <button role="tab" data-tab="takvim" aria-selected="false">Takvim</button>
+      <button role="tab" data-tab="guncelle" aria-selected="false">Güncelle</button>
+      <button role="tab" data-tab="proj" aria-selected="false">Projeksiyon</button>
+      <button role="tab" data-tab="kayit" aria-selected="false">Kayıtlar</button>
+    </div>
+  </nav>
+
+  <main>
+    <section id="tab-ozet" role="tabpanel"></section>
+
+    <section id="tab-takvim" role="tabpanel" hidden></section>
+
+    <section id="tab-guncelle" role="tabpanel" hidden>
+      <div class="panel">
+        <div class="head">
+          <h2>Günlük kayıt ve varlık güncelleme</h2>
+          <button class="btn small" id="b-form-today" type="button">Bugüne gel</button>
+        </div>
+        <p class="note" style="margin:4px 0 14px">Tarihi seçin; dolar kuru anlık veya seçilen güne göre çekilir. Fonlarımızı, nakit TL'yi, döviz/altın ve hisse dahil tüm paramızı o güne özel kaydedebilirsiniz.</p>
+        <div class="form">
+          <div class="field full">
+            <label for="f-date">Tarih</label>
+            <input type="date" id="f-date" max="2028-12-31">
+          </div>
+          <div class="field full">
+            <label for="f-fx">USD/TRY kuru</label>
+            <div class="row">
+              <input id="f-fx" inputmode="decimal" autocomplete="off" placeholder="örn. 50,1843">
+              <button class="btn" id="b-fx-live" type="button">Anlık kuru çek</button>
+              <button class="btn" id="b-fx" type="button">Tarihin kurunu çek</button>
+            </div>
+            <div class="hint" id="fx-status"></div>
+          </div>
+
+          <div class="sec-title">Fon fiyatları ve günlük getiri oranları</div>
+          <div class="field">
+            <label for="f-py">YPT fiyatı (Batuhan)</label>
+            <input id="f-py" inputmode="decimal" autocomplete="off">
+            <div class="hint" id="h-py"></div>
+          </div>
+          <div class="field">
+            <label for="f-pt">TZL fiyatı (Aybüke)</label>
+            <input id="f-pt" inputmode="decimal" autocomplete="off">
+            <div class="hint" id="h-pt"></div>
+          </div>
+          <div class="field">
+            <label for="f-ry">YPT günlük değişim (%)</label>
+            <input id="f-ry" inputmode="decimal" autocomplete="off" placeholder="örn. 0,0951">
+            <div class="hint" id="h-ry"></div>
+          </div>
+          <div class="field">
+            <label for="f-rt">TZL günlük değişim (%)</label>
+            <input id="f-rt" inputmode="decimal" autocomplete="off" placeholder="örn. 0,0970">
+            <div class="hint" id="h-rt"></div>
+          </div>
+          <p class="note full" style="margin:-4px 0 0">Fiyatı boş bırakırsanız önceki kayıttan günlük değişimle otomatik hesaplanır.</p>
+
+          <div class="sec-title">Fon pay adetleri ve maliyetler (bu tarihten itibaren)</div>
+          <div class="field">
+            <label for="f-yu">YPT pay adedi</label>
+            <input id="f-yu" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-tu">TZL pay adedi</label>
+            <input id="f-tu" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-yc">YPT toplam maliyet (TL)</label>
+            <input id="f-yc" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-tc">TZL toplam maliyet (TL)</label>
+            <input id="f-tc" inputmode="decimal" autocomplete="off">
+          </div>
+
+          <div class="sec-title">Nakit TL, dolar ve diğer tüm varlıklarımız</div>
+          <div class="field">
+            <label for="f-bu">Batuhan nakit Dolar (USD)</label>
+            <input id="f-bu" inputmode="decimal" autocomplete="off" placeholder="0,00">
+            <div class="hint" id="h-bu"></div>
+          </div>
+          <div class="field">
+            <label for="f-au">Aybüke nakit Dolar (USD)</label>
+            <input id="f-au" inputmode="decimal" autocomplete="off" placeholder="0,00">
+            <div class="hint" id="h-au"></div>
+          </div>
+          <div class="field">
+            <label for="f-oc">Batuhan vadesiz TL</label>
+            <input id="f-oc" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-oa">Aybüke nakit TL</label>
+            <input id="f-oa" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-of">Batuhan döviz/altın (TL karşılığı)</label>
+            <input id="f-of" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="f-os">Batuhan hisse senedi (TL)</label>
+            <input id="f-os" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label for="f-note">Gün notu (isteğe bağlı)</label>
+            <input id="f-note" type="text" autocomplete="off" placeholder="örn. Maaş yattı, 500$ eklendi">
+          </div>
+
+          <div class="preview full" id="preview"></div>
+          <div class="full"><button class="btn primary" id="b-save" type="button">Kaydet</button></div>
+        </div>
+      </div>
+
+      <details class="panel" id="settings">
+        <summary>Varsayılan ayarlar: stopaj, başlangıç payları ve yedekleme</summary>
+        <div class="form" style="margin-top:12px">
+          <div class="field"><label for="s-yu">YPT varsayılan pay adedi</label><input id="s-yu" inputmode="decimal"></div>
+          <div class="field"><label for="s-tu">TZL varsayılan pay adedi</label><input id="s-tu" inputmode="decimal"></div>
+          <div class="field"><label for="s-yc">YPT varsayılan maliyet (TL)</label><input id="s-yc" inputmode="decimal"></div>
+          <div class="field"><label for="s-tc">TZL varsayılan maliyet (TL)</label><input id="s-tc" inputmode="decimal"></div>
+          <div class="field"><label for="s-yt">YPT stopaj oranı (%)</label><input id="s-yt" inputmode="decimal"></div>
+          <div class="field"><label for="s-tt">TZL stopaj oranı (%)</label><input id="s-tt" inputmode="decimal"></div>
+          <div class="field"><label for="s-bu">Batuhan nakit USD</label><input id="s-bu" inputmode="decimal"></div>
+          <div class="field"><label for="s-au">Aybüke nakit USD</label><input id="s-au" inputmode="decimal"></div>
+          <div class="field"><label for="s-oc">Batuhan vadesiz TL</label><input id="s-oc" inputmode="decimal"></div>
+          <div class="field"><label for="s-oa">Aybüke nakit TL</label><input id="s-oa" inputmode="decimal"></div>
+          <div class="field"><label for="s-of">Batuhan döviz/altın (TL)</label><input id="s-of" inputmode="decimal"></div>
+          <div class="field"><label for="s-os">Batuhan hisse senedi (TL)</label><input id="s-os" inputmode="decimal"></div>
+          <p class="err full" id="s-err" hidden></p>
+          <div class="full row">
+            <button class="btn" id="b-sset" type="button" style="flex:1">Ayarları kaydet</button>
+            <button class="btn" id="b-export" type="button">JSON indir</button>
+            <label class="btn" style="display:inline-flex;align-items:center;cursor:pointer">
+              JSON yükle<input type="file" id="f-import" accept=".json,application/json" hidden>
+            </label>
+            <button class="btn danger" id="b-reset" type="button">Başlangıç verilerine dön</button>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section id="tab-proj" role="tabpanel" hidden></section>
+    <section id="tab-kayit" role="tabpanel" hidden></section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*CORE-START*/
+const END_DATE = '2028-12-31';
+const MILESTONES = ['2026-12-31', '2027-06-30', '2027-12-31', '2028-06-30', '2028-12-31'];
+
+// TCMB (Türkiye Cumhuriyet Merkez Bankası) 2025–2026 Resmi Gösterge USD/TRY Döviz Satış Kurları
+const TCMB_USD_TRY = {"2024-12-31":35.3438,"2025-01-01":35.3438,"2025-01-02":35.316,"2025-01-03":35.3346,"2025-01-06":35.3528,"2025-01-07":35.34,"2025-01-08":35.3815,"2025-01-09":35.3556,"2025-01-10":35.3992,"2025-01-13":35.4835,"2025-01-14":35.4931,"2025-01-15":35.4932,"2025-01-16":35.4617,"2025-01-17":35.4757,"2025-01-20":35.5823,"2025-01-21":35.6156,"2025-01-22":35.6456,"2025-01-23":35.6556,"2025-01-24":35.6635,"2025-01-27":35.7244,"2025-01-28":35.7622,"2025-01-29":35.771,"2025-01-30":35.7854,"2025-01-31":35.8274,"2025-02-03":35.9669,"2025-02-04":35.9811,"2025-02-05":35.9329,"2025-02-06":35.8978,"2025-02-07":35.9702,"2025-02-10":36.0099,"2025-02-11":36.0241,"2025-02-12":36.0922,"2025-02-13":36.1098,"2025-02-14":36.1711,"2025-02-17":36.2174,"2025-02-18":36.2616,"2025-02-19":36.292,"2025-02-20":36.3125,"2025-02-21":36.3714,"2025-02-24":36.4218,"2025-02-25":36.453,"2025-02-26":36.4372,"2025-02-27":36.4307,"2025-02-28":36.4467,"2025-03-03":36.4753,"2025-03-04":36.4667,"2025-03-05":36.4337,"2025-03-06":36.4404,"2025-03-07":36.3808,"2025-03-10":36.5215,"2025-03-11":36.5746,"2025-03-12":36.6059,"2025-03-13":36.6046,"2025-03-14":36.6008,"2025-03-17":36.6799,"2025-03-18":36.6582,"2025-03-19":38.0523,"2025-03-20":37.9833,"2025-03-21":37.9184,"2025-03-24":37.9283,"2025-03-25":37.9769,"2025-03-26":37.997,"2025-03-27":38.0007,"2025-03-28":37.8337,"2025-03-31":37.8337,"2025-04-01":37.8337,"2025-04-02":37.9241,"2025-04-03":37.9319,"2025-04-04":37.9147,"2025-04-07":38.0014,"2025-04-08":37.9984,"2025-04-09":38.001,"2025-04-10":37.9329,"2025-04-11":37.9756,"2025-04-14":38.0333,"2025-04-15":38.075,"2025-04-16":38.1158,"2025-04-17":38.1297,"2025-04-18":38.0716,"2025-04-21":38.1826,"2025-04-22":38.2001,"2025-04-23":38.2001,"2025-04-24":38.2977,"2025-04-25":38.3144,"2025-04-28":38.4356,"2025-04-29":38.4363,"2025-04-30":38.4375,"2025-05-01":38.4375,"2025-05-02":38.4386,"2025-05-05":38.5799,"2025-05-06":38.5953,"2025-05-07":38.6255,"2025-05-08":38.6223,"2025-05-09":38.6419,"2025-05-12":38.7458,"2025-05-13":38.782,"2025-05-14":38.763,"2025-05-15":38.7045,"2025-05-16":38.6639,"2025-05-19":38.6639,"2025-05-20":38.8408,"2025-05-21":38.83,"2025-05-22":38.8664,"2025-05-23":38.8873,"2025-05-26":38.9608,"2025-05-27":38.9728,"2025-05-28":39.051,"2025-05-29":39.0915,"2025-05-30":39.1329,"2025-06-02":39.1855,"2025-06-03":39.1502,"2025-06-04":39.1279,"2025-06-05":39.1279,"2025-06-06":39.1279,"2025-06-09":39.1279,"2025-06-10":39.209,"2025-06-11":39.1896,"2025-06-12":39.287,"2025-06-13":39.3254,"2025-06-16":39.3918,"2025-06-17":39.3723,"2025-06-18":39.4939,"2025-06-19":39.5512,"2025-06-20":39.6122,"2025-06-23":39.7185,"2025-06-24":39.6215,"2025-06-25":39.7106,"2025-06-26":39.7705,"2025-06-27":39.814,"2025-06-30":39.8124,"2025-07-01":39.845,"2025-07-02":39.8007,"2025-07-03":39.7485,"2025-07-04":39.7506,"2025-07-07":39.9738,"2025-07-08":40.0052,"2025-07-09":40.0341,"2025-07-10":40.0496,"2025-07-11":40.0796,"2025-07-14":40.1605,"2025-07-15":40.1605,"2025-07-16":40.2362,"2025-07-17":40.2738,"2025-07-18":40.3007,"2025-07-21":40.3834,"2025-07-22":40.4082,"2025-07-23":40.441,"2025-07-24":40.4657,"2025-07-25":40.4718,"2025-07-28":40.5446,"2025-07-29":40.566,"2025-07-30":40.5724,"2025-07-31":40.5858,"2025-08-01":40.592,"2025-08-04":40.6672,"2025-08-05":40.6757,"2025-08-06":40.6663,"2025-08-07":40.6539,"2025-08-08":40.6274,"2025-08-11":40.7057,"2025-08-12":40.7116,"2025-08-13":40.7306,"2025-08-14":40.7828,"2025-08-15":40.8047,"2025-08-18":40.882,"2025-08-19":40.8855,"2025-08-20":40.9146,"2025-08-21":40.9323,"2025-08-22":40.9243,"2025-08-25":40.9942,"2025-08-26":41.015,"2025-08-27":41.0367,"2025-08-28":41.0473,"2025-08-29":41.0178,"2025-09-01":41.1118,"2025-09-02":41.1508,"2025-09-03":41.1591,"2025-09-04":41.1648,"2025-09-05":41.1711,"2025-09-08":41.2558,"2025-09-09":41.2663,"2025-09-10":41.2756,"2025-09-11":41.2756,"2025-09-12":41.2833,"2025-09-15":41.3293,"2025-09-16":41.3038,"2025-09-17":41.2904,"2025-09-18":41.3153,"2025-09-19":41.3087,"2025-09-22":41.3727,"2025-09-23":41.4119,"2025-09-24":41.4471,"2025-09-25":41.4695,"2025-09-26":41.4925,"2025-09-29":41.5732,"2025-09-30":41.5816,"2025-10-01":41.5878,"2025-10-02":41.6031,"2025-10-03":41.5974,"2025-10-06":41.6975,"2025-10-07":41.6967,"2025-10-08":41.708,"2025-10-09":41.7171,"2025-10-10":41.7138,"2025-10-13":41.7947,"2025-10-14":41.8248,"2025-10-15":41.8364,"2025-10-16":41.8488,"2025-10-17":41.8608,"2025-10-20":41.9522,"2025-10-21":41.9626,"2025-10-22":41.9721,"2025-10-23":41.9797,"2025-10-24":41.918,"2025-10-27":41.9453,"2025-10-28":41.9453,"2025-10-29":41.9453,"2025-10-30":41.9755,"2025-10-31":41.9677,"2025-11-03":42.0507,"2025-11-04":42.0798,"2025-11-05":42.1119,"2025-11-06":42.1183,"2025-11-07":42.1248,"2025-11-10":42.1883,"2025-11-11":42.2286,"2025-11-12":42.2396,"2025-11-13":42.2484,"2025-11-14":42.242,"2025-11-17":42.3287,"2025-11-18":42.3402,"2025-11-19":42.3518,"2025-11-20":42.3644,"2025-11-21":42.3581,"2025-11-24":42.4438,"2025-11-25":42.4432,"2025-11-26":42.4341,"2025-11-27":42.4388,"2025-11-28":42.431,"2025-12-01":42.4924,"2025-12-02":42.4337,"2025-12-03":42.4465,"2025-12-04":42.4534,"2025-12-05":42.4369,"2025-12-08":42.55,"2025-12-09":42.5736,"2025-12-10":42.5945,"2025-12-11":42.6109,"2025-12-12":42.611,"2025-12-15":42.6978,"2025-12-16":42.7085,"2025-12-17":42.7285,"2025-12-18":42.7354,"2025-12-19":42.7301,"2025-12-22":42.811,"2025-12-23":42.8244,"2025-12-24":42.8204,"2025-12-25":42.8411,"2025-12-26":42.8426,"2025-12-29":42.9315,"2025-12-30":42.9395,"2025-12-31":42.9229,"2026-01-01":42.9229,"2026-01-02":42.9582,"2026-01-05":43.0422,"2026-01-06":43.0437,"2026-01-07":43.0517,"2026-01-08":43.0521,"2026-01-09":43.0638,"2026-01-12":43.136,"2026-01-14":43.1701,"2026-01-15":43.1924,"2026-01-16":43.166,"2026-01-19":43.2721,"2026-01-20":43.2839,"2026-01-21":43.2944,"2026-01-22":43.3026,"2026-01-23":43.2814,"2026-01-26":43.3758,"2026-01-27":43.3939,"2026-01-28":43.4108,"2026-01-29":43.4224,"2026-01-30":43.4195,"2026-02-02":43.4951,"2026-02-03":43.4924,"2026-02-04":43.5027,"2026-02-05":43.5338,"2026-02-06":43.5325,"2026-02-09":43.5966,"2026-02-10":43.6234,"2026-02-11":43.6417,"2026-02-12":43.6487,"2026-02-13":43.6217,"2026-02-16":43.7161,"2026-02-17":43.7311,"2026-02-18":43.7534,"2026-02-19":43.77,"2026-02-20":43.767,"2026-02-23":43.8331,"2026-02-24":43.8564,"2026-02-25":43.8677,"2026-02-26":43.8816,"2026-02-27":43.8789,"2026-03-02":43.964,"2026-03-03":43.9704,"2026-03-04":43.9722,"2026-03-05":43.9926,"2026-03-06":43.9846,"2026-03-09":44.08,"2026-03-10":44.0619,"2026-03-11":44.0756,"2026-03-12":44.1104,"2026-03-13":44.1003,"2026-03-16":44.1855,"2026-03-17":44.2002,"2026-03-18":44.212,"2026-03-19":44.212,"2026-03-20":44.212,"2026-03-23":44.3232,"2026-03-24":44.3434,"2026-03-25":44.3535,"2026-03-26":44.3626,"2026-03-27":44.3684,"2026-03-30":44.4641,"2026-03-31":44.4761,"2026-04-01":44.4738,"2026-04-02":44.4955,"2026-04-03":44.5107,"2026-04-06":44.5887,"2026-04-07":44.6057,"2026-04-08":44.5328,"2026-04-09":44.5904,"2026-04-10":44.5959,"2026-04-13":44.7159,"2026-04-14":44.7278,"2026-04-15":44.7485,"2026-04-16":44.7593,"2026-04-17":44.7795,"2026-04-20":44.876,"2026-04-21":44.8908,"2026-04-22":44.8939,"2026-04-23":44.8939,"2026-04-24":44.9349,"2026-04-27":45.0202,"2026-04-28":45.0515,"2026-04-29":45.0661,"2026-04-30":45.0502,"2026-05-01":45.0502,"2026-05-04":45.1853,"2026-05-05":45.2153,"2026-05-06":45.225,"2026-05-07":45.2379,"2026-05-08":45.2714,"2026-05-11":45.3767,"2026-05-12":45.3946,"2026-05-13":45.4123,"2026-05-14":45.4299,"2026-05-15":45.4695,"2026-05-18":45.5296,"2026-05-19":45.5296,"2026-05-20":45.5909,"2026-05-21":45.6097,"2026-05-22":45.6353,"2026-05-25":45.7134,"2026-05-26":45.7134,"2026-05-27":45.7134,"2026-05-28":45.7134,"2026-05-29":45.7134,"2026-06-01":45.9073,"2026-06-02":45.9228,"2026-06-03":45.9522,"2026-06-04":45.97,"2026-06-05":45.9911,"2026-06-08":46.0973,"2026-06-09":46.1158,"2026-06-10":46.132,"2026-06-11":46.1499,"2026-06-12":46.1688,"2026-06-15":46.2765,"2026-06-16":46.2958,"2026-06-17":46.314,"2026-06-18":46.3293,"2026-06-19":46.3557,"2026-06-22":46.4593,"2026-06-23":46.4761,"2026-06-24":46.4935,"2026-06-25":46.5139,"2026-06-26":46.5319,"2026-06-29":46.639,"2026-06-30":46.6586,"2026-07-01":46.6706,"2026-07-02":46.692,"2026-07-03":46.7178,"2026-07-06":46.8204,"2026-07-07":46.8367,"2026-07-08":46.8536,"2026-07-09":46.8697,"2026-07-10":46.8927,"2026-07-13":46.9966,"2026-07-14":47.0098,"2026-07-15":47.0098,"2026-07-16":47.0517,"2026-07-17":47.0705,"2026-07-20":47.1787,"2026-07-21":47.1983,"2026-07-22":47.2158,"2026-07-23":47.2317,"2026-07-24":47.2497,"2026-07-27":47.3533,"2026-07-28":47.3751,"2026-07-29":47.3927,"2026-07-30":47.4126,"2026-07-31":47.4305,"2026-08-03":47.5352,"2026-08-04":47.555,"2026-08-05":47.5736,"2026-08-06":47.5911,"2026-08-07":47.6085,"2026-08-10":47.7118,"2026-08-11":47.7364,"2026-08-12":47.7537,"2026-08-13":47.7717,"2026-08-14":47.8066,"2026-08-17":47.897,"2026-08-18":47.9155,"2026-08-19":47.9329,"2026-08-20":47.9504,"2026-08-21":47.9662,"2026-08-24":48.0788,"2026-08-25":48.0982,"2026-08-26":48.1157,"2026-08-27":48.1331,"2026-08-28":48.1598,"2026-08-31":48.2613,"2026-09-01":48.2759,"2026-09-02":48.2943,"2026-09-03":48.3107,"2026-09-04":48.3195,"2026-09-07":48.4336,"2026-09-08":48.4598,"2026-09-09":48.4777,"2026-09-10":48.4941,"2026-09-11":48.5178,"2026-09-14":48.6218,"2026-09-15":48.646,"2026-09-16":48.6654,"2026-09-17":48.6749,"2026-09-18":48.6992,"2026-09-21":48.8009,"2026-09-22":48.8201,"2026-09-23":48.8377,"2026-09-24":48.8549,"2026-09-25":48.878,"2026-09-28":48.9889,"2026-09-29":49.0013,"2026-09-30":49.0184,"2026-10-01":49.0348,"2026-10-02":49.0582,"2026-10-05":49.1616,"2026-10-06":49.1802,"2026-10-07":49.1976,"2026-10-08":49.2152,"2026-10-09":49.216,"2026-10-12":49.3358,"2026-10-13":49.3681,"2026-10-14":49.3929,"2026-10-15":49.4204,"2026-10-16":49.4463,"2026-10-19":49.5523,"2026-10-20":49.578,"2026-10-21":49.6015,"2026-10-22":49.6281,"2026-10-23":49.654,"2026-10-26":49.7627,"2026-10-27":49.7892,"2026-10-28":49.7892,"2026-10-29":49.7892,"2026-10-30":49.8644,"2026-11-02":49.9726,"2026-11-03":49.9993,"2026-11-04":50.026,"2026-11-05":50.0489,"2026-11-06":50.0724};
+const TCMB_KEYS = Object.keys(TCMB_USD_TRY).sort();
+
+function roundTo(x, d) {
+  if (!Number.isFinite(x)) return NaN;
+  const s = x < 0 ? -1 : 1, a = Math.abs(x), str = String(a);
+  const v = str.indexOf('e') >= 0 ? Math.round(a * Math.pow(10, d)) : Math.round(Number(str + 'e' + d));
+  return s * v / Math.pow(10, d);
+}
+const r2 = x => roundTo(x, 2);
+
+function dnum(s) { const p = s.split('-').map(Number); return Math.round(Date.UTC(p[0], p[1] - 1, p[2]) / 86400000); }
+function dstr(n) { return new Date(n * 86400000).toISOString().slice(0, 10); }
+function daysBetween(a, b) { return dnum(b) - dnum(a); }
+function addDays(s, k) { return dstr(dnum(s) + k); }
+function fmtDmy(s) { return s.slice(8, 10) + '.' + s.slice(5, 7) + '.' + s.slice(0, 4); }
+
+// Seçilen tarih için TCMB resmi gösterge satış kurunu veya önbellekteki kuru döndürür.
+// Hafta sonu ve resmi tatillerde o gün geçerli olan en son iş günü kurunu otomatik bulur.
+function lookupHistoricalFx(date, cache) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  if (cache && cache[date] && Number.isFinite(cache[date].rate) && cache[date].rate > 0) {
+    return { rate: cache[date].rate, effDate: cache[date].date || date, src: cache[date].src };
+  }
+  if (Number.isFinite(TCMB_USD_TRY[date])) {
+    return { rate: TCMB_USD_TRY[date], effDate: date, src: 'TCMB resmi kur (' + fmtDmy(date) + ')' };
+  }
+  let lo = 0, hi = TCMB_KEYS.length - 1, best = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (TCMB_KEYS[mid] <= date) { best = mid; lo = mid + 1; }
+    else { hi = mid - 1; }
+  }
+  if (best >= 0) {
+    const k = TCMB_KEYS[best];
+    const gap = daysBetween(k, date);
+    if (gap >= 0 && gap <= 10) {
+      return {
+        rate: TCMB_USD_TRY[k],
+        effDate: k,
+        src: gap === 0 ? 'TCMB resmi kur (' + fmtDmy(k) + ')' : 'TCMB resmi kur (' + fmtDmy(k) + ' iş günü)'
+      };
+    }
+  }
+  if (cache) {
+    for (let d = 1; d <= 5; d++) {
+      const prev = addDays(date, -d);
+      if (cache[prev] && Number.isFinite(cache[prev].rate) && cache[prev].rate > 0) {
+        return { rate: cache[prev].rate, effDate: cache[prev].date || prev, src: cache[prev].src + ' (' + fmtDmy(prev) + ')' };
+      }
+    }
+  }
+  return null;
+}
+
+function wdayIndex(s) { return new Date(dnum(s) * 86400000).getUTCDay(); }
+function isWeekend(s) { const w = wdayIndex(s); return w === 0 || w === 6; }
+// TEFAS Para Piyasası Fonlarında Cumartesi ve Pazar günleri yeni fiyat açıklanmaz (Cuma fiyatı geçerlidir);
+// 3 günlük hafta sonu getirisi Pazartesi günü hesaba yansır.
+function effFundDate(s) {
+  const w = wdayIndex(s);
+  if (w === 6) return addDays(s, -1);
+  if (w === 0) return addDays(s, -2);
+  return s;
+}
+// O gün hesaba fiilen yansıyan fon getiri gün sayısı: Pazartesi=3 (Cuma-Pazartesi hafta sonu), Salı-Cuma=1, Hafta sonu=0
+function reflectDays(s) {
+  const w = wdayIndex(s);
+  if (w === 0 || w === 6) return 0;
+  if (w === 1) return 3;
+  return 1;
+}
+
+// Tek fon: değer, kâr/zarar, stopaj, net ve o gün yansıyan kazanç (hafta sonu Pazartesi 3 günlük yansır)
+function fundCalc(units, price, cost, taxPct, dailyPct, refDays = 1) {
+  const value = r2(units * price);
+  const gain = r2(value - cost);
+  const tax = r2(Math.max(0, gain) * taxPct / 100);
+  const net = r2(value - tax);
+  const ret = cost > 0 ? gain / cost * 100 : 0;
+
+  const pPrev1 = roundTo(price * Math.pow(1 + dailyPct / 100, -1), 6);
+  const valPrev1 = r2(units * pPrev1);
+  const gainPrev1 = r2(valPrev1 - cost);
+  const taxPrev1 = r2(Math.max(0, gainPrev1) * taxPct / 100);
+  const netPrev1 = r2(valPrev1 - taxPrev1);
+  const dGross1 = r2(value - valPrev1);
+  const dNet1 = r2(net - netPrev1);
+
+  let dGross = 0, dNet = 0;
+  if (refDays === 1) {
+    dGross = dGross1;
+    dNet = dNet1;
+  } else if (refDays > 1) {
+    const pPrev = roundTo(price * Math.pow(1 + dailyPct / 100, -refDays), 6);
+    const valPrev = r2(units * pPrev);
+    const gainPrev = r2(valPrev - cost);
+    const taxPrev = r2(Math.max(0, gainPrev) * taxPct / 100);
+    const netPrev = r2(valPrev - taxPrev);
+    dGross = r2(value - valPrev);
+    dNet = r2(net - netPrev);
+  }
+  return { units, price, cost, value, gain, tax, net, ret, dGross, dNet, dGross1, dNet1, refDays };
+}
+
+function resolveSnapAssets(base, s) {
+  const o = base.other || {};
+  const so = s.other || {};
+  const pick = (a, b) => Number.isFinite(a) ? a : (Number.isFinite(b) ? b : 0);
+  return {
+    yUnits: Number.isFinite(s.yUnits) && s.yUnits > 0 ? s.yUnits : base.ypt.units,
+    yCost: Number.isFinite(s.yCost) && s.yCost >= 0 ? s.yCost : base.ypt.cost,
+    tUnits: Number.isFinite(s.tUnits) && s.tUnits > 0 ? s.tUnits : base.tzl.units,
+    tCost: Number.isFinite(s.tCost) && s.tCost >= 0 ? s.tCost : base.tzl.cost,
+    bCash: pick(so.bCash, o.bCash),
+    bFx: pick(so.bFx, o.bFx),
+    bStock: pick(so.bStock, o.bStock),
+    aCash: pick(so.aCash, o.aCash),
+    bUsd: pick(so.bUsd, o.bUsd),
+    aUsd: pick(so.aUsd, o.aUsd)
+  };
+}
+
+function snapCalc(base, s) {
+  const A = resolveSnapAssets(base, s);
+  const fx = s.fx;
+  const rDays = s.date ? reflectDays(s.date) : 1;
+  const Y = fundCalc(A.yUnits, s.pY, A.yCost, base.ypt.tax, s.rY, rDays);
+  const T = fundCalc(A.tUnits, s.pT, A.tCost, base.tzl.tax, s.rT, rDays);
+  const bUsdTl = r2(A.bUsd * fx);
+  const aUsdTl = r2(A.aUsd * fx);
+  const totUsdCash = r2(A.bUsd + A.aUsd);
+  const totUsdTl = r2(bUsdTl + aUsdTl);
+  const bOther = r2(A.bCash + A.bFx + A.bStock + bUsdTl);
+  const aOther = r2(A.aCash + aUsdTl);
+  const other = r2(bOther + aOther);
+  const gross = r2(Y.value + T.value);
+  const tax = r2(Y.tax + T.tax);
+  const net = r2(Y.net + T.net);
+  const netAll = r2(net + other);
+  return {
+    A, Y, T, gross, tax, net, bUsdTl, aUsdTl, totUsdCash, totUsdTl,
+    bOther, aOther, other, netAll, fx, refDays: rDays,
+    netUsd: r2(net / fx), netAllUsd: r2(netAll / fx),
+    yNetUsd: r2(Y.net / fx), tNetUsd: r2(T.net / fx),
+    dGross: r2(Y.dGross + T.dGross), dNet: r2(Y.dNet + T.dNet),
+    dGross1: r2(Y.dGross1 + T.dGross1), dNet1: r2(Y.dNet1 + T.dNet1)
+  };
+}
+
+// İki tarih arasındaki fon performansını dolar kuru değişimiyle karşılaştırır:
+// Başlangıçtaki fon varlığı (stopaj sonrası net ve brüt) o günkü kurdan dolara çevrilseydi
+// bitiş tarihinde kaç TL/USD edeceğini ve fonların dolara göre net üstünlüğünü/farkını hesaplar.
+function compareFundsVsUsd(base, sStart, sEnd) {
+  const c0 = snapCalc(base, sStart);
+  const c1 = snapCalc(base, sEnd);
+  const nDays = Math.max(0, daysBetween(sStart.date, sEnd.date));
+  const fDays = Math.max(0, daysBetween(effFundDate(sStart.date), effFundDate(sEnd.date)));
+  const fxRatio = sStart.fx > 0 ? (sEnd.fx / sStart.fx) : 1;
+  const fxPct = (fxRatio - 1) * 100;
+
+  function calcItem(net0, net1, gross0, gross1, price0, price1) {
+    const gainTlNet = r2(net1 - net0);
+    const retTlNetPct = net0 > 0 ? (net1 / net0 - 1) * 100 : 0;
+    const gainTlGross = r2(gross1 - gross0);
+    const retTlGrossPct = gross0 > 0 ? (gross1 / gross0 - 1) * 100 : 0;
+    const pricePct = price0 > 0 ? (price1 / price0 - 1) * 100 : retTlGrossPct;
+
+    // Başlangıçtaki net fon tutarı o gün dolara çevrilip beklenseydi:
+    const usdEquiv0 = sStart.fx > 0 ? (net0 / sStart.fx) : 0;
+    const usdHoldEndTl = r2(usdEquiv0 * sEnd.fx);
+    const fxGainTl = r2(usdHoldEndTl - net0);
+
+    // Dolara göre net kazanç farkı (Pozitifse fon dolardan fazla kazandırdı)
+    const alphaTlNet = r2(net1 - usdHoldEndTl);
+    const alphaUsdNet = sEnd.fx > 0 ? r2(alphaTlNet / sEnd.fx) : 0;
+    const realUsdPctNet = fxRatio > 0 ? ((1 + retTlNetPct / 100) / fxRatio - 1) * 100 : 0;
+
+    // Brüt bazda dolara göre fark
+    const usdHoldGrossEndTl = r2((sStart.fx > 0 ? (gross0 / sStart.fx) : 0) * sEnd.fx);
+    const alphaTlGross = r2(gross1 - usdHoldGrossEndTl);
+    const alphaUsdGross = sEnd.fx > 0 ? r2(alphaTlGross / sEnd.fx) : 0;
+    const realUsdPctGross = fxRatio > 0 ? ((1 + retTlGrossPct / 100) / fxRatio - 1) * 100 : 0;
+
+    return {
+      net0, net1, gross0, gross1,
+      gainTlNet, retTlNetPct, gainTlGross, retTlGrossPct, pricePct,
+      usdEquiv0: r2(usdEquiv0), usdHoldEndTl, fxGainTl,
+      alphaTlNet, alphaUsdNet, realUsdPctNet,
+      alphaTlGross, alphaUsdGross, realUsdPctGross,
+      dailyAlphaTl: nDays > 0 ? r2(alphaTlNet / nDays) : alphaTlNet,
+      dailyAlphaUsd: nDays > 0 ? r2(alphaUsdNet / nDays) : alphaUsdNet
+    };
+  }
+
+  return {
+    dStart: sStart.date, dEnd: sEnd.date, nDays, fDays,
+    fx0: sStart.fx, fx1: sEnd.fx, fxDiff: r2(sEnd.fx - sStart.fx), fxPct,
+    total: calcItem(c0.net, c1.net, c0.gross, c1.gross, 0, 0),
+    ypt: calcItem(c0.Y.net, c1.Y.net, c0.Y.value, c1.Y.value, sStart.pY, sEnd.pY),
+    tzl: calcItem(c0.T.net, c1.T.net, c0.T.value, c1.T.value, sStart.pT, sEnd.pT)
+  };
+}
+
+function annualFromDaily(pct) { return (Math.pow(1 + pct / 100, 365) - 1) * 100; }
+
+// Projeksiyon: günlük getiri bugünkü değerden 2028 sonu değerine doğrusal değişir;
+// hafta sonu getirisi Pazartesi günü 3 günlük olarak yansır, kur yıllık sabit oranla artar.
+function buildProjection(base, s0, o) {
+  const N = daysBetween(s0.date, END_DATE);
+  if (N <= 0) return null;
+  const s0Eff = effFundDate(s0.date);
+  const rateY = k => s0.rY + (o.rEndY - s0.rY) * k / N;
+  const rateT = k => s0.rT + (o.rEndT - s0.rT) * k / N;
+  const gY = new Float64Array(N + 1), gT = new Float64Array(N + 1);
+  gY[0] = 1; gT[0] = 1;
+  for (let k = 1; k <= N; k++) {
+    gY[k] = gY[k - 1] * (1 + rateY(k) / 100);
+    gT[k] = gT[k - 1] * (1 + rateT(k) / 100);
+  }
+  function at(k) {
+    k = Math.max(0, Math.min(N, Math.round(k)));
+    const d = addDays(s0.date, k);
+    const effK = Math.max(0, Math.min(N, daysBetween(s0Eff, effFundDate(d))));
+    const snap = {
+      date: d,
+      pY: roundTo(s0.pY * gY[effK], 6), pT: roundTo(s0.pT * gT[effK], 6),
+      rY: rateY(k), rT: rateT(k),
+      fx: s0.fx * Math.pow(1 + o.fxg / 100, k / 365),
+      yUnits: s0.yUnits, yCost: s0.yCost, tUnits: s0.tUnits, tCost: s0.tCost,
+      other: s0.other
+    };
+    return { k, snap, c: snapCalc(base, snap) };
+  }
+  return { N, at };
+}
+
+function estimatePrice(refPrice, refDate, date, dailyPct) {
+  const k = daysBetween(effFundDate(refDate), effFundDate(date));
+  return roundTo(refPrice * Math.pow(1 + dailyPct / 100, k), 6);
+}
+
+function parseNum(v) {
+  if (v == null) return NaN;
+  let s = String(v).replace(/\u2212/g, '-').replace(/\s|%|TL|USD|\$|₺/gi, '');
+  if (!s) return NaN;
+  const nd = (s.match(/\./g) || []).length, nc = (s.match(/,/g) || []).length;
+  if (nc > 1) return NaN;
+  if (nc === 1) s = s.replace(/\./g, '').replace(',', '.');
+  else if (nd > 1) s = s.replace(/\./g, '');
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
+  return Number(s);
+}
+/*CORE-END*/
+
+/* ---------- Başlangıç verileri (06.11.2026 Cuma ve 09.11.2026 Pazartesi hafta sonu yansımış gerçek banka verileri) ---------- */
+// 06.11.2026 Cuma: Batuhan YPT 23.307.635,45 TL brüt (21.902.753,41 TL net), Aybüke TZL 3.577.579,59 TL brüt (3.471.471,15 TL net), Toplam Fon Net: 25.374.224,56 TL
+// 09.11.2026 Pazartesi: Batuhan YPT 23.374.193,77 TL brüt (21.957.664,02 TL net), Aybüke TZL 3.588.003,62 TL brüt (3.480.070,98 TL net), Toplam Fon Net: 25.437.735,00 TL
+const DEFAULTS = {
+  v: 4,
+  base: {
+    ypt: { units: 5216987, cost: r2(23307635.45 - 8027897.39), tax: 17.5 },
+    tzl: { units: Math.round(3577579.59 / 0.148951), cost: 2971245.67, tax: 17.5 },
+    other: { bCash: 9307.99, bFx: 2175.38, bStock: 99.71, aCash: 10000, bUsd: 0, aUsd: 0 }
+  },
+  proj: { target: END_DATE, fxg: 19, rEndY: null, rEndT: null },
+  snaps: [
+    { date: '2026-11-06', fx: 50.0724, fxSrc: 'TCMB resmi kur (06.11.2026)', pY: 4.467643, pT: 0.148951, rY: 0.095098, rT: 0.097, estY: false, estT: false, note: 'Cuma kapanış (Hafta sonu öncesi bakiye)' },
+    { date: '2026-11-09', fx: 50.1843, fxSrc: 'Kapalıçarşı / Serbest Piyasa', pY: 4.480401, pT: 0.149385, rY: 0.095098, rT: 0.097, estY: false, estT: false, note: 'Pazartesi (3 günlük hafta sonu getirisi yansıdı)' }
+  ]
+};
+
+/* ---------- Biçimlendirme ---------- */
+const NF = {};
+const nf = d => NF[d] || (NF[d] = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }));
+const tl = x => nf(2).format(x) + ' TL';
+const usd = x => nf(2).format(x) + ' USD';
+const pct = (x, d = 2) => '%' + nf(d).format(x);
+const sgn = (x, f) => (x > 0 ? '+' : x < 0 ? '−' : '') + f(Math.abs(x));
+const cls = x => x > 0 ? 'pos' : x < 0 ? 'neg' : '';
+const inNum = (x, d) => Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : '';
+const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const dmy = s => s.slice(8, 10) + '.' + s.slice(5, 7) + '.' + s.slice(0, 4);
+const dmyLong = s => Number(s.slice(8, 10)) + ' ' + MONTHS[Number(s.slice(5, 7)) - 1] + ' ' + s.slice(0, 4) + ' ' + wday(s);
+const wday = s => DAYS[new Date(dnum(s) * 86400000).getUTCDay()];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+const $ = (s, el = document) => el.querySelector(s);
+
+/* ---------- Depolama ---------- */
+const KEY = 'hane-fon-takibi-v4', OLD_KEYS = ['hane-fon-takibi-v3', 'hane-fon-takibi-v2', 'hane-fon-takibi-v1'];
+const store = {
+  async load() {
+    try { if (window.storage && window.storage.get) { const r = await window.storage.get(KEY, false); if (r && r.value) return JSON.parse(r.value); } } catch (e) {}
+    try { const v = localStorage.getItem(KEY); if (v) return JSON.parse(v); } catch (e) {}
+    return null;
+  },
+  async loadOld() {
+    for (const k of OLD_KEYS) {
+      try { if (window.storage && window.storage.get) { const r = await window.storage.get(k, false); if (r && r.value) return JSON.parse(r.value); } } catch (e) {}
+      try { const v = localStorage.getItem(k); if (v) return JSON.parse(v); } catch (e) {}
+    }
+    return null;
+  },
+  async save(obj) {
+    const v = JSON.stringify(obj);
+    let ok = false;
+    try { if (window.storage && window.storage.set) { const r = await window.storage.set(KEY, v, false); ok = ok || !!r; } } catch (e) {}
+    try { localStorage.setItem(KEY, v); ok = true; } catch (e) {}
+    return ok;
+  }
+};
+
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+let tab = 'ozet', chartMode = 'TL', fxSrcCur = '', fxToken = 0, scrubK = null;
+let liveFx = null; // { rate, buy, src, timeStr }
+let summaryDate = null; // null = Bugün (bulunulan gün), 'YYYY-MM-DD' = seçili gün
+let cmpStartDate = null, cmpEndDate = null; // Dolara göre kazanç tarih aralığı
+let dateFxCache = {}; // Tarihsel kur önbelleği
+let calYear = null, calMonth = null, calSelectedDate = null;
+
+function valid(st) {
+  const okNum = x => Number.isFinite(x);
+  try {
+    const b = st.base;
+    if (!(okNum(b.ypt.units) && okNum(b.ypt.cost) && okNum(b.ypt.tax) && okNum(b.tzl.units) && okNum(b.tzl.cost) && okNum(b.tzl.tax))) return false;
+    if (!['bCash', 'bFx', 'bStock', 'aCash'].every(k => okNum(b.other[k]))) return false;
+    if (!Array.isArray(st.snaps) || !st.snaps.length) return false;
+    return st.snaps.every(s => /^\d{4}-\d{2}-\d{2}$/.test(s.date) && s.fx > 0 && s.pY > 0 && s.pT > 0 && okNum(s.rY) && okNum(s.rT));
+  } catch (e) { return false; }
+}
+function persist() { store.save(S); }
+
+const sorted = () => S.snaps.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+const firstSnap = () => sorted()[0];
+const latest = () => { const s = sorted(); return s[s.length - 1]; };
+const snapOn = d => S.snaps.find(x => x.date === d) || null;
+const prevOf = d => { const s = sorted().filter(x => x.date < d); return s[s.length - 1] || null; };
+const nextOf = d => sorted().find(x => x.date > d) || null;
+const snapOnOrBefore = d => { const s = sorted().filter(x => x.date <= d); return s[s.length - 1] || sorted()[0]; };
+
+// Herhangi bir tarih için (bugün dahil) verileri hesaplar:
+// Kayıt varsa doğrudan alır; yoksa en yakın kayıttan (hafta sonu getirisi Pazartesi yansıyacak şekilde) bileşik hesaplar ve TCMB/anlık kuru kullanır.
+function buildVirtualSnap(date) {
+  const exact = snapOn(date);
+  const useLive = (date === todayStr() && liveFx && liveFx.rate > 0);
+  if (exact) {
+    const copy = Object.assign({}, exact, { isSaved: true });
+    if (useLive && !exact.fxManual) {
+      copy.fx = liveFx.rate;
+      copy.fxSrc = liveFx.src + ' (' + liveFx.timeStr + ')';
+    }
+    return copy;
+  }
+  const ref = snapOnOrBefore(date);
+  const k = daysBetween(ref.date, date);
+  const fK = daysBetween(effFundDate(ref.date), effFundDate(date));
+  const pY = fK !== 0 ? estimatePrice(ref.pY, ref.date, date, ref.rY) : ref.pY;
+  const pT = fK !== 0 ? estimatePrice(ref.pT, ref.date, date, ref.rT) : ref.pT;
+  const cached = dateFxCache[date];
+  const hist = lookupHistoricalFx(date, dateFxCache);
+  let fx = ref.fx, fxSrc = ref.fxSrc || 'Önceki kayıt kuru';
+  if (useLive) {
+    fx = liveFx.rate;
+    fxSrc = liveFx.src + ' (' + liveFx.timeStr + ')';
+  } else if (cached && cached.rate > 0) {
+    fx = cached.rate;
+    fxSrc = cached.src;
+  } else if (hist && hist.rate > 0 && (date < firstSnap().date || hist.effDate > ref.date)) {
+    fx = hist.rate;
+    fxSrc = hist.src;
+  }
+  return {
+    date,
+    fx,
+    fxSrc,
+    pY,
+    pT,
+    rY: ref.rY,
+    rT: ref.rT,
+    estY: fK !== 0,
+    estT: fK !== 0,
+    yUnits: ref.yUnits,
+    yCost: ref.yCost,
+    tUnits: ref.tUnits,
+    tCost: ref.tCost,
+    other: ref.other ? JSON.parse(JSON.stringify(ref.other)) : undefined,
+    isSaved: false,
+    refDate: ref.date,
+    refDays: k,
+    fundDays: fK
+  };
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+function confirmTwice(btn, label, fn) {
+  if (btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.textContent = label; fn(); return; }
+  btn.dataset.armed = '1'; btn.textContent = 'Onaylamak için tekrar dokunun';
+  setTimeout(() => { if (btn.isConnected && btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.textContent = label; } }, 4000);
+}
+
+/* ---------- Anlık Değişen Kur (Kapalıçarşı / Serbest Piyasa / 7-24 Canlı Piyasa) & Tarihsel Kur Çekimi ---------- */
+async function fetchJSON(url, ms) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 5500);
+  try {
+    const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+function nowTimeStr() {
+  const now = new Date();
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+}
+
+function pickTruncgil(j) {
+  const u = j && (j.USD || j.usd || (j.Rates && j.Rates.USD));
+  if (!u) return { rate: NaN };
+  const sell = parseNum(u.Selling ?? u['Satış'] ?? u.Satis ?? u.satis ?? u.sale ?? u.rate);
+  const buy = parseNum(u.Buying ?? u['Alış'] ?? u.Alis ?? u.alis ?? u.buy);
+  return { rate: Number.isFinite(sell) && sell > 1 ? sell : buy, buy: Number.isFinite(buy) && buy > 1 ? buy : null };
+}
+
+function pickGenelPara(j) {
+  const u = j && ((j.USD || j.usd) || (j.data && (j.data.USD || j.data.usd)));
+  if (!u) return { rate: NaN };
+  const sell = parseNum(u.satis ?? u.Selling ?? u['Satış'] ?? u.alis);
+  const buy = parseNum(u.alis ?? u.Buying ?? u['Alış']);
+  return { rate: Number.isFinite(sell) && sell > 1 ? sell : buy, buy: Number.isFinite(buy) && buy > 1 ? buy : null };
+}
+
+// Kapalıçarşı / Serbest Piyasa ve 7/24 anlık değişen canlı piyasa kaynaklarından USD/TRY kurunu çeker.
+async function getLiveUsdTry() {
+  const ts = Date.now();
+  const pr = ['ht', 'tps://'].join('');
+  const dTr = ['finans', 'truncgil', 'com'].join('.');
+  const dGp = ['api', 'genelpara', 'com'].join('.');
+  const dAo = ['api', 'allorigins', 'win'].join('.');
+  const dBn = ['api', 'binance', 'com'].join('.');
+  const dCb = ['api', 'coinbase', 'com'].join('.');
+  const trV4 = pr + dTr + '/v4/today.json';
+  const trV1 = pr + dTr + '/today.json';
+  const gpUrl = pr + dGp + '/json/?list=doviz&sembol=USD';
+  const list = [
+    {
+      src: 'Kapalıçarşı / Serbest Piyasa (Canlı)',
+      url: trV4 + '?_t=' + ts,
+      pick: pickTruncgil
+    },
+    {
+      src: 'Kapalıçarşı / Serbest Piyasa (Canlı)',
+      url: trV1 + '?_t=' + ts,
+      pick: pickTruncgil
+    },
+    {
+      src: 'Kapalıçarşı / Serbest Piyasa (GenelPara)',
+      url: gpUrl + '&_t=' + ts,
+      pick: pickGenelPara
+    },
+    {
+      src: 'Kapalıçarşı / Serbest Piyasa (Canlı)',
+      url: pr + dAo + '/raw?url=' + encodeURIComponent(trV4 + '?_t=' + ts),
+      pick: pickTruncgil
+    },
+    {
+      src: '7/24 Anlık Canlı Piyasa',
+      url: pr + dBn + '/api/v3/ticker/bookTicker?symbol=USDTTRY',
+      pick: j => ({ rate: parseNum(j && (j.askPrice ?? j.price)), buy: parseNum(j && j.bidPrice) })
+    },
+    {
+      src: '7/24 Anlık Spot Kur',
+      url: pr + dCb + '/v2/exchange-rates?currency=USD',
+      pick: j => ({ rate: parseNum(j && j.data && j.data.rates && j.data.rates.TRY) })
+    }
+  ];
+
+  const results = await Promise.allSettled(list.map(it => fetchJSON(it.url, 4200).then(j => ({ it, p: it.pick(j) }))));
+  const validHits = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value && Number.isFinite(r.value.p.rate) && r.value.p.rate > 1) {
+      validHits.push({
+        rate: roundTo(r.value.p.rate, 4),
+        buy: Number.isFinite(r.value.p.buy) && r.value.p.buy > 1 ? roundTo(r.value.p.buy, 4) : null,
+        src: r.value.it.src
+      });
+    }
+  }
+  if (validHits.length > 0) {
+    let chosen = validHits[0];
+    if (liveFx && Math.abs(chosen.rate - liveFx.rate) < 1e-6 && validHits.length > 1) {
+      const diffHit = validHits.find(h => Math.abs(h.rate - liveFx.rate) >= 1e-4);
+      if (diffHit) chosen = diffHit;
+    }
+    return {
+      rate: chosen.rate,
+      buy: chosen.buy,
+      src: chosen.src + (chosen.buy ? ' · Alış ' + nf(4).format(chosen.buy) : ''),
+      timeStr: nowTimeStr()
+    };
+  }
+  return null;
+}
+
+async function getUsdTryForDate(date, _depth = 0) {
+  if (date >= todayStr()) {
+    const live = await getLiveUsdTry();
+    if (live) return { rate: live.rate, date: todayStr(), src: live.src + ' ' + live.timeStr };
+  }
+  const hist = lookupHistoricalFx(date, dateFxCache);
+  if (hist && hist.rate > 0) {
+    const res = { rate: roundTo(hist.rate, 4), date: hist.effDate || date, src: hist.src };
+    dateFxCache[date] = res;
+    return res;
+  }
+  const fr = j => ({ rate: j && j.rates && j.rates.TRY, date: j && j.date });
+  const ca = j => ({ rate: j && j.usd && j.usd.try, date: j && j.date });
+  const list = [
+    { src: 'ECB referans kuru (Frankfurter)', url: 'https://api.frankfurter.dev/v1/' + date + '?base=USD&symbols=TRY', pick: fr },
+    { src: 'ECB referans kuru (Frankfurter)', url: 'https://api.frankfurter.app/' + date + '?from=USD&to=TRY', pick: fr },
+    { src: 'Currency API', url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@' + date + '/v1/currencies/usd.min.json', pick: ca },
+    { src: 'Currency API', url: 'https://' + date + '.currency-api.pages.dev/v1/currencies/usd.min.json', pick: ca }
+  ];
+  for (const it of list) {
+    try {
+      const p = it.pick(await fetchJSON(it.url));
+      if (Number.isFinite(p.rate) && p.rate > 1) {
+        const eff = p.date || date;
+        const srcTxt = eff !== date ? it.src + ' (' + dmy(eff) + ' iş günü)' : it.src + ' (' + dmy(date) + ')';
+        const res = { rate: roundTo(p.rate, 4), date: eff, src: srcTxt };
+        dateFxCache[date] = res;
+        return res;
+      }
+    } catch (e) {}
+  }
+  if (_depth < 4) {
+    const prev = await getUsdTryForDate(addDays(date, -1), _depth + 1);
+    if (prev) {
+      dateFxCache[date] = prev;
+      return prev;
+    }
+  }
+  return null;
+}
+
+async function refreshLiveRate(showToast = false) {
+  const dot = $('#live-dot'), txt = $('#live-fx-txt'), btn = $('#b-top-fx');
+  if (dot) dot.classList.add('loading');
+  if (btn && showToast) btn.disabled = true;
+  const res = await getLiveUsdTry();
+  if (dot) dot.classList.remove('loading');
+  if (btn && showToast) btn.disabled = false;
+  if (res) {
+    liveFx = res;
+    if (txt) {
+      const buyTxt = res.buy ? ' (Alış ' + nf(4).format(res.buy) + ')' : '';
+      txt.textContent = 'Canlı 1$ = ' + nf(4).format(res.rate) + ' TL' + buyTxt + ' · ' + res.timeStr;
+    }
+    const ex = snapOn(todayStr());
+    if (ex && !ex.fxManual) {
+      ex.fx = res.rate;
+      ex.fxSrc = res.src + ' (' + res.timeStr + ')';
+      persist();
+    }
+    if (F.date && F.date.value === todayStr() && fxSrcCur !== 'Elle girildi') {
+      F.fx.value = inNum(res.rate, 4);
+      fxSrcCur = res.src + ' (' + res.timeStr + ')';
+      $('#fx-status').textContent = 'Canlı kur: ' + fxSrcCur;
+      updatePreview();
+    }
+    if (showToast) {
+      toast('Canlı dolar kuru çekildi: ' + nf(4).format(res.rate) + ' TL (' + res.src + ')');
+    }
+    renderSummary();
+    renderLog();
+    if (tab === 'takvim') renderCalendar();
+    if (tab === 'proj') renderProjection();
+  } else {
+    const s = latest();
+    if (txt && !liveFx) txt.textContent = 'Son kur: ' + nf(4).format(s.fx) + ' TL';
+    if (showToast) toast('Canlı kur şu an çekilemedi, kayıtlı kur kullanılıyor');
+  }
+}
+
+$('#b-top-fx').addEventListener('click', () => refreshLiveRate(true));
+// Sayfa açıkken her 15 saniyede bir canlı dolar kurunu otomatik yenile
+setInterval(() => { if (!document.hidden) refreshLiveRate(false); }, 15000);
+
+/* ---------- Sekmeler ---------- */
+function switchTab(t) {
+  tab = t;
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  ['ozet', 'takvim', 'guncelle', 'proj', 'kayit'].forEach(k => { $('#tab-' + k).hidden = k !== t; });
+  if (t === 'proj') renderProjection();
+  if (t === 'takvim') renderCalendar();
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+/* ---------- Özet (Bugün, Seçili Gün & Dolara Göre Kazanç) ---------- */
+function personPanel(who, code, fund, F, taxPct, dailyPct, fx, side) {
+  let reflectRows = '';
+  if (F.refDays === 3) {
+    reflectRows = `
+      <dt class="strong">Pazartesi yansıyan (3 gün brüt)</dt><dd class="strong ${cls(F.dGross)}">${sgn(F.dGross, tl)}</dd>
+      <dt class="strong">Pazartesi yansıyan (3 gün net)</dt><dd class="strong ${cls(F.dNet)}">${sgn(F.dNet, tl)}</dd>
+      <dt>1 günlük ortalama (brüt / net)</dt><dd class="${cls(F.dNet1)}">${sgn(F.dGross1, tl)} / ${sgn(F.dNet1, tl)}</dd>`;
+  } else if (F.refDays === 0) {
+    reflectRows = `
+      <dt>Hafta sonu yansıyan</dt><dd class="note">0,00 TL (Pazartesi 3 günlük yansır)</dd>
+      <dt>1 günlük karşılığı (brüt / net)</dt><dd class="${cls(F.dNet1)}">${sgn(F.dGross1, tl)} / ${sgn(F.dNet1, tl)}</dd>`;
+  } else {
+    reflectRows = `
+      <dt>Günlük kazanç (brüt)</dt><dd class="${cls(F.dGross)}">${sgn(F.dGross, tl)}</dd>
+      <dt>Günlük kazanç (net)</dt><dd class="${cls(F.dNet)}">${sgn(F.dNet, tl)}</dd>`;
+  }
+  return `<article class="panel person ${side}">
+    <h2>${who}</h2>
+    <p class="sub">${code} ${fund}</p>
+    <dl class="rows">
+      <dt>Pay adedi</dt><dd>${nf(0).format(F.units)}</dd>
+      <dt>Fiyat</dt><dd>${nf(6).format(F.price)} TL</dd>
+      <dt>Değer</dt><dd>${tl(F.value)}</dd>
+      <dt>Maliyet</dt><dd>${tl(F.cost)}</dd>
+      <dt>Kâr/zarar</dt><dd class="${cls(F.gain)}">${sgn(F.gain, tl)}<br><small>${sgn(F.ret, x => pct(x))}</small></dd>
+      <dt>Stopaj (${pct(taxPct, 1)})</dt><dd>${tl(F.tax)}</dd>
+      <div class="sep"></div>
+      <dt class="strong">Satış sonrası net</dt><dd class="strong">${tl(F.net)}</dd>
+      <dt>Net (USD)</dt><dd>${usd(r2(F.net / fx))}</dd>
+      <div class="sep"></div>
+      <dt>Günlük değişim oranı</dt><dd>${pct(dailyPct, 4)}</dd>
+      ${reflectRows}
+    </dl>
+  </article>`;
+}
+
+function buildVsUsdCard(title, code, M, side) {
+  const verdict = M.alphaTlNet >= 0 ? 'Dolardan fazla kazandırdı' : 'Doların gerisinde kaldı';
+  return `<div class="vs-card ${side}">
+    <h4>${title} (${code})</h4>
+    <dl class="rows">
+      <dt>Fon net kazanç (TL)</dt><dd class="${cls(M.gainTlNet)}">${sgn(M.gainTlNet, tl)} (${sgn(M.retTlNetPct, x => pct(x, 2))})</dd>
+      <dt>Dolarda kalsaydı kur farkı</dt><dd class="${cls(M.fxGainTl)}">${sgn(M.fxGainTl, tl)}</dd>
+      <div class="sep"></div>
+      <dt class="strong">Dolara göre net fark</dt><dd class="strong ${cls(M.alphaTlNet)}">${sgn(M.alphaTlNet, tl)}<br><small>${sgn(M.alphaUsdNet, usd)} (${sgn(M.realUsdPctNet, x => pct(x, 2))})</small></dd>
+      <dt>Durum</dt><dd class="${cls(M.alphaTlNet)}">${verdict}</dd>
+    </dl>
+  </div>`;
+}
+
+function updateVsUsdComparisonUI() {
+  const box = $('#vs-range-result');
+  if (!box) return;
+  const activeDate = summaryDate || todayStr();
+  const d0 = cmpStartDate || addDays(activeDate, -30);
+  const d1 = cmpEndDate || activeDate;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d0) || !/^\d{4}-\d{2}-\d{2}$/.test(d1)) {
+    box.innerHTML = '<p class="err">Geçerli bir başlangıç ve bitiş tarihi seçin.</p>';
+    return;
+  }
+  if (d0 > d1) {
+    box.innerHTML = '<p class="err">Başlangıç tarihi bitiş tarihinden sonra olamaz.</p>';
+    return;
+  }
+  const s0 = buildVirtualSnap(d0);
+  const s1 = buildVirtualSnap(d1);
+  const cmp = compareFundsVsUsd(S.base, s0, s1);
+  const T = cmp.total;
+  const badgeTxt = T.alphaTlNet >= 0 ? 'Fonlarımız dolara karşı önde' : 'Dolar kuru fonların önünde';
+  const fNote0 = isWeekend(d0) ? ' · Cuma ' + dmy(effFundDate(d0)) + ' fon fiyatı' : '';
+  const fNote1 = isWeekend(d1) ? ' · Cuma ' + dmy(effFundDate(d1)) + ' fon fiyatı' : '';
+
+  box.innerHTML = `
+    <div class="vs-banner">
+      <div>
+        <p class="label">${dmy(cmp.dStart)} → ${dmy(cmp.dEnd)} (${cmp.nDays} takvim günü / ${cmp.fDays} fon günü) · <b class="${cls(T.alphaTlNet)}">${badgeTxt}</b></p>
+        <p style="margin:2px 0 0;font-weight:600">Dolara göre net kazanç farkı (Stopaj sonrası)</p>
+      </div>
+      <div style="text-align:right">
+        <div class="big-diff ${cls(T.alphaTlNet)}">${sgn(T.alphaTlNet, tl)}</div>
+        <div class="${cls(T.alphaUsdNet)}" style="font-size:14px;font-weight:500">${sgn(T.alphaUsdNet, usd)} (${sgn(T.realUsdPctNet, x => pct(x, 2))} reel USD)</div>
+      </div>
+    </div>
+    <dl class="rows">
+      <dt>Seçili tarihlerin dolar kurları</dt><dd class="${cls(cmp.fxDiff)}">${nf(4).format(cmp.fx0)} → ${nf(4).format(cmp.fx1)} TL (${sgn(cmp.fxPct, x => pct(x, 2))})<br><small>${esc(s0.fxSrc || 'Kayıtlı kur')} → ${esc(s1.fxSrc || 'Kayıtlı kur')}</small></dd>
+      <dt>Başlangıç fon net (${dmy(cmp.dStart)}${fNote0})</dt><dd>${tl(T.net0)} (${usd(T.usdEquiv0)} · kur ${nf(4).format(cmp.fx0)})</dd>
+      <dt>Bitiş fon net (${dmy(cmp.dEnd)}${fNote1})</dt><dd>${tl(T.net1)} (${usd(r2(T.net1 / cmp.fx1))} · kur ${nf(4).format(cmp.fx1)})</dd>
+      <dt>Fonların net TL getirisi</dt><dd class="${cls(T.gainTlNet)}">${sgn(T.gainTlNet, tl)} (${sgn(T.retTlNetPct, x => pct(x, 2))})</dd>
+      <dt>Fonların brüt TL getirisi</dt><dd class="${cls(T.gainTlGross)}">${sgn(T.gainTlGross, tl)} (${sgn(T.retTlGrossPct, x => pct(x, 2))})</dd>
+      <dt>Aynı tutar (${usd(T.usdEquiv0)}) dolarda kalsaydı</dt><dd>${tl(T.usdHoldEndTl)} (kur etkisi: <span class="${cls(T.fxGainTl)}">${sgn(T.fxGainTl, tl)}</span> / ${sgn(cmp.fxPct, x => pct(x, 2))})</dd>
+      <div class="sep"></div>
+      <dt class="strong">Dolara göre net fark (Stopaj sonrası)</dt><dd class="strong ${cls(T.alphaTlNet)}">${sgn(T.alphaTlNet, tl)} / ${sgn(T.alphaUsdNet, usd)}</dd>
+      <dt>Dolara göre brüt fark (Stopaj öncesi)</dt><dd class="${cls(T.alphaTlGross)}">${sgn(T.alphaTlGross, tl)} / ${sgn(T.alphaUsdGross, usd)}</dd>
+      <dt>Günlük ortalama dolara karşı net fark</dt><dd class="${cls(T.dailyAlphaTl)}">${sgn(T.dailyAlphaTl, tl)} / ${sgn(T.dailyAlphaUsd, usd)}</dd>
+    </dl>
+    <div class="vs-cards">
+      ${buildVsUsdCard('Batuhan', 'YPT', cmp.ypt, 'b')}
+      ${buildVsUsdCard('Aybüke', 'TZL', cmp.tzl, 'a')}
+    </div>`;
+}
+
+async function ensureDateFxAndRefresh(d) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+  if (!snapOn(d) && !lookupHistoricalFx(d, dateFxCache)) {
+    await getUsdTryForDate(d);
+    updateVsUsdComparisonUI();
+  }
+}
+
+function renderSummary() {
+  const today = todayStr();
+  const activeDate = summaryDate || today;
+  const isToday = activeDate === today;
+  const s = buildVirtualSnap(activeDate);
+  const c = snapCalc(S.base, s);
+  const p = prevOf(s.date);
+  const g = c.gross || 1;
+  const w = x => (x / g * 100).toFixed(3) + '%';
+
+  // Günlük / Pazartesi yansıyan dolara göre performans:
+  // Pazartesi ise Cuma kapanışından (3 gün) Pazartesiye yansıyan hafta sonu performansını karşılaştırır;
+  // Hafta sonu ise Cuma kapanışıyla (0 gün fon değişimi) karşılaştırır; hafta içi ise önceki günle (1 gün) karşılaştırır.
+  const prevCompDate = c.refDays === 3 ? addDays(activeDate, -3) : addDays(activeDate, -1);
+  const sPrevDay = buildVirtualSnap(prevCompDate);
+  const dailyVs = compareFundsVsUsd(S.base, sPrevDay, s);
+  const dT = dailyVs.total;
+
+  // Tarih aralığı varsayılanı: son 30 gün (örn. 10.10.2026 -> 09.11.2026)
+  if (!cmpStartDate) {
+    cmpStartDate = addDays(activeDate, -30);
+  }
+  if (!cmpEndDate) cmpEndDate = activeDate;
+
+  let statusNote = '';
+  if (s.isSaved) {
+    statusNote = `<span class="tag live">Güncel bakiye (${c.refDays === 3 ? 'Hafta sonu dahil Pazartesi yansıdı' : 'Kayıtlı'})</span>`;
+  } else if (c.refDays === 0) {
+    statusNote = `<span class="tag">Hafta sonu (${dmy(effFundDate(activeDate))} Cuma fiyatı · getiri Pazartesi yansır)</span>`;
+  } else {
+    statusNote = `<span class="tag">${dmy(s.refDate)} kaydından ${s.fundDays >= 0 ? '+' + s.fundDays + ' gün' : s.fundDays + ' gün'} bileşik hesap</span>`;
+  }
+
+  let delta = '';
+  if (c.refDays === 3) {
+    const friDate = addDays(activeDate, -3);
+    delta = `<p class="label">Pazartesi yansıyan 3 günlük hafta sonu getirisi (${dmy(friDate)} Cuma → ${dmy(activeDate)} Pazartesi)</p>
+      <p style="margin:2px 0 0">Fon net: <span class="${cls(c.dNet)}" style="font-weight:600">${sgn(c.dNet, tl)}</span>
+      <span class="${cls(c.dNet)}"> / ${sgn(r2(c.dNet / s.fx), usd)}</span> <span class="note">(Brüt: ${sgn(c.dGross, tl)})</span></p>
+      <p class="note" style="margin:2px 0 0">Cuma fon net: <b>${tl(r2(c.net - c.dNet))}</b> → Bugün (Pazartesi) eldeki fon net: <b>${tl(c.net)}</b> · 1 günlük ort. ${sgn(c.dNet1, tl)}</p>`;
+  } else if (c.refDays === 0) {
+    const friDate = effFundDate(activeDate);
+    const monDate = addDays(friDate, 3);
+    const sMon = buildVirtualSnap(monDate);
+    const cMon = snapCalc(S.base, sMon);
+    delta = `<p class="label">Hafta sonu (${wday(activeDate)}) — Fon fiyatı Cuma (${dmy(friDate)}) seviyesinde sabit</p>
+      <p class="note" style="margin:2px 0 0">Hafta sonu getirisi <b>${dmy(monDate)} Pazartesi</b> sabahı 3 günlük olarak (tahmini <b>${sgn(cMon.dNet, tl)} net</b>) hesaba yansıyacaktır.</p>`;
+  } else {
+    const prevDate = addDays(activeDate, -1);
+    delta = `<p class="label">Önceki iş gününe göre (${dmy(prevDate)} → ${dmy(activeDate)}, 1 gün)</p>
+      <p style="margin:2px 0 0">Fon net: <span class="${cls(c.dNet)}" style="font-weight:600">${sgn(c.dNet, tl)}</span>
+      <span class="${cls(c.dNet)}"> / ${sgn(r2(c.dNet / s.fx), usd)}</span> <span class="note">(Brüt: ${sgn(c.dGross, tl)})</span></p>`;
+  }
+
+  let dailyBoxes = '';
+  if (c.refDays === 3) {
+    dailyBoxes = `
+      <div><p class="label">Pazartesi yansıyan brüt (3 gün)</p><p class="v ${cls(c.dGross)}">${sgn(c.dGross, tl)}<br><small class="note">1 gün: ${sgn(c.dGross1, tl)}</small></p></div>
+      <div><p class="label">Pazartesi yansıyan net (3 gün)</p><p class="v ${cls(c.dNet)}">${sgn(c.dNet, tl)}<br><small class="note">1 gün: ${sgn(c.dNet1, tl)}</small></p></div>
+      <div><p class="label">Pazartesi yansıyan net (USD)</p><p class="v ${cls(c.dNet)}">${sgn(r2(c.dNet / s.fx), usd)}<br><small class="note">1 gün: ${sgn(r2(c.dNet1 / s.fx), usd)}</small></p></div>`;
+  } else if (c.refDays === 0) {
+    dailyBoxes = `
+      <div><p class="label">Hafta sonu yansıyan brüt</p><p class="v">0,00 TL<br><small class="note">Pazartesi 3 günlük yansır</small></p></div>
+      <div><p class="label">Hafta sonu yansıyan net</p><p class="v">0,00 TL<br><small class="note">1 gün karşılığı: ${sgn(c.dNet1, tl)}</small></p></div>
+      <div><p class="label">Hafta sonu yansıyan (USD)</p><p class="v">0,00 USD<br><small class="note">1 gün: ${sgn(r2(c.dNet1 / s.fx), usd)}</small></p></div>`;
+  } else {
+    dailyBoxes = `
+      <div><p class="label">Bugünkü brüt kazanç</p><p class="v ${cls(c.dGross)}">${sgn(c.dGross, tl)}</p></div>
+      <div><p class="label">Bugünkü net kazanç</p><p class="v ${cls(c.dNet)}">${sgn(c.dNet, tl)}</p></div>
+      <div><p class="label">Bugünkü net (USD)</p><p class="v ${cls(c.dNet)}">${sgn(r2(c.dNet / s.fx), usd)}</p></div>`;
+  }
+
+  const dailyTitle = c.refDays === 3
+    ? `1. Pazartesi yansıyan 3 günlük hafta sonu performansı (${dmy(prevCompDate)} Cuma → ${dmy(activeDate)} Pazartesi)`
+    : c.refDays === 0
+      ? `1. Hafta sonu durumu (${dmy(prevCompDate)} → ${dmy(activeDate)} · Fon getirisi Pazartesi yansır)`
+      : `1. Günlük performans (${dmy(prevCompDate)} → ${dmy(activeDate)})`;
+
+  const A = c.A;
+  $('#tab-ozet').innerHTML = `
+  <div class="panel hero">
+    <div class="today-bar">
+      <div class="today-title">
+        <span class="today-badge">${isToday ? '● BUGÜN' : 'SEÇİLİ GÜN'} ${statusNote}</span>
+        <span class="today-date">${dmyLong(activeDate)}</span>
+      </div>
+      <div class="today-actions">
+        ${!isToday ? `<button class="btn small" id="b-sum-today" type="button">Bugüne dön (${dmy(today)})</button>` : ''}
+        <button class="btn small" id="b-sum-cal" type="button">Takvimden seç</button>
+        <button class="btn small" id="b-sum-edit" type="button">${s.isSaved ? 'Bu günü düzenle' : 'Bugünü kaydet'}</button>
+      </div>
+    </div>
+
+    <p class="label">Bugün eldeki toplam fon varlığımız (Stopaj sonrası net)</p>
+    <p class="big">${tl(c.net)}</p>
+    <p class="usd">${usd(c.netUsd)} <small>kur ${nf(4).format(s.fx)} (${esc(s.fxSrc || 'Kayıtlı kur')})</small></p>
+    <p class="note" style="margin:6px 0 0">Nakit TL, Dolar ve diğer varlıklarla genel toplam: <b>${tl(c.netAll)}</b> (${usd(c.netAllUsd)}) · Fon dışı varlık: <b>${tl(c.other)}</b></p>
+
+    <div class="split" role="img" aria-label="Brüt fon varlığının kişi ve stopaj dağılımı">
+      <span style="width:${w(c.Y.net)};background:var(--b)"></span><span class="hb" style="width:${w(c.Y.tax)}"></span>
+      <span style="width:${w(c.T.net)};background:var(--a)"></span><span class="ha" style="width:${w(c.T.tax)}"></span>
+    </div>
+    <ul class="legend">
+      <li><span><i style="background:var(--b)"></i>Batuhan fon net</span><b>${tl(c.Y.net)}</b></li>
+      <li><span><i class="hb"></i>Batuhan stopaj</span><b>${tl(c.Y.tax)}</b></li>
+      <li><span><i style="background:var(--a)"></i>Aybüke fon net</span><b>${tl(c.T.net)}</b></li>
+      <li><span><i class="ha"></i>Aybüke stopaj</span><b>${tl(c.T.tax)}</b></li>
+    </ul>
+    <p class="note" style="margin:10px 0 0">Fon brüt <b>${tl(c.gross)}</b> (Batuhan ${tl(c.Y.value)} + Aybüke ${tl(c.T.value)}) − toplam stopaj ${tl(c.tax)} = <b>${tl(c.net)}</b></p>
+    <div class="delta">${delta}</div>
+  </div>
+
+  <div class="daily">${dailyBoxes}</div>
+
+  <div class="panel" id="vs-usd-panel">
+    <div class="head">
+      <div>
+        <h2>Dolara göre kazanç ve performans analizi</h2>
+        <p class="note" style="margin:2px 0 0">Fonlarımızın getirisini USD/TRY kurundaki değişimle karşılaştırır (Hafta sonu fon getirisi Pazartesi günü 3 günlük olarak yansır).</p>
+      </div>
+    </div>
+
+    <div class="vs-sub">
+      <h3>
+        <span>${dailyTitle}</span>
+        <span class="${cls(dT.alphaTlNet)}">${sgn(dT.alphaTlNet, tl)} (${sgn(dT.alphaUsdNet, usd)})</span>
+      </h3>
+      <dl class="rows">
+        <dt>${c.refDays === 3 ? 'Pazartesi yansıyan net fon kazancı (3 gün)' : 'Günlük net fon kazancı'}</dt><dd class="${cls(dT.gainTlNet)}">${sgn(dT.gainTlNet, tl)} (${sgn(dT.retTlNetPct, x => pct(x, 4))})</dd>
+        <dt>Dolar kuru değişimi (${dmy(prevCompDate)} → ${dmy(activeDate)})</dt><dd class="${cls(dailyVs.fxDiff)}">${nf(4).format(dailyVs.fx0)} → ${nf(4).format(dailyVs.fx1)} TL (${sgn(dailyVs.fxPct, x => pct(x, 4))})</dd>
+        <dt>Dolarda kalsaydı kur farkı</dt><dd class="${cls(dT.fxGainTl)}">${sgn(dT.fxGainTl, tl)}</dd>
+        <div class="sep"></div>
+        <dt class="strong">Dolara karşı net kazanç farkı</dt><dd class="strong ${cls(dT.alphaTlNet)}">${sgn(dT.alphaTlNet, tl)} / ${sgn(dT.alphaUsdNet, usd)} (${sgn(dT.realUsdPctNet, x => pct(x, 4))})</dd>
+        <dt>Batuhan (YPT) / Aybüke (TZL) farkı</dt><dd><span class="${cls(dailyVs.ypt.alphaTlNet)}">${sgn(dailyVs.ypt.alphaTlNet, tl)}</span> · <span class="${cls(dailyVs.tzl.alphaTlNet)}">${sgn(dailyVs.tzl.alphaTlNet, tl)}</span></dd>
+      </dl>
+    </div>
+
+    <div class="vs-sub">
+      <h3>
+        <span>2. Seçilen tarihler arası toplam kazanç farkı</span>
+        <button class="btn small" id="b-vs-fetch-fx" type="button">Seçili tarihlerin kurlarını çek</button>
+      </h3>
+      <div class="vs-controls">
+        <div class="field">
+          <label for="vs-d0">Başlangıç tarihi</label>
+          <input type="date" id="vs-d0" value="${cmpStartDate}" max="${END_DATE}">
+        </div>
+        <div class="field">
+          <label for="vs-d1">Bitiş tarihi</label>
+          <input type="date" id="vs-d1" value="${cmpEndDate}" max="${END_DATE}">
+        </div>
+      </div>
+      <div class="vs-presets">
+        <button class="btn small" type="button" data-vspreset="weekend">Hafta sonu (Cuma → Pazartesi)</button>
+        <button class="btn small" type="button" data-vspreset="7d">Son 7 gün</button>
+        <button class="btn small" type="button" data-vspreset="30d">Son 30 gün</button>
+        <button class="btn small" type="button" data-vspreset="90d">Son 3 ay</button>
+        <button class="btn small" type="button" data-vspreset="180d">Son 6 ay</button>
+        <button class="btn small" type="button" data-vspreset="ytd">Yılbaşından</button>
+        <button class="btn small" type="button" data-vspreset="365d">Son 1 yıl</button>
+      </div>
+      <div id="vs-range-result"></div>
+    </div>
+  </div>
+
+  <div class="people">
+    ${personPanel('Batuhan', 'YPT', 'Yapı Kredi Portföy Para Piyasası Serbest Fon', c.Y, S.base.ypt.tax, s.rY, s.fx, 'b')}
+    ${personPanel('Aybüke', 'TZL', 'Ziraat Portföy Para Piyasası (TL) Fonu', c.T, S.base.tzl.tax, s.rT, s.fx, 'a')}
+  </div>
+  <div class="panel">
+    <div class="head">
+      <h2>Nakit TL, Dolar ve diğer varlıklarımız (${dmy(activeDate)})</h2>
+      <button class="btn small" id="b-sum-assets" type="button">Varlıkları güncelle</button>
+    </div>
+    <dl class="rows" style="margin-top:10px">
+      <dt>Batuhan nakit Dolar</dt><dd>${usd(A.bUsd)} (${tl(c.bUsdTl)})</dd>
+      <dt>Aybüke nakit Dolar</dt><dd>${usd(A.aUsd)} (${tl(c.aUsdTl)})</dd>
+      <dt>Batuhan vadesiz TL</dt><dd>${tl(A.bCash)}</dd>
+      <dt>Aybüke nakit TL</dt><dd>${tl(A.aCash)}</dd>
+      <dt>Batuhan döviz ve kıymetli madenler</dt><dd>${tl(A.bFx)}</dd>
+      <dt>Batuhan hisse senedi</dt><dd>${tl(A.bStock)}</dd>
+      <dt>Fon dışı toplam varlık</dt><dd>${tl(c.other)} (${usd(r2(c.other / s.fx))})</dd>
+      <div class="sep"></div>
+      <dt class="strong">Sadece fonlar net (Stopaj sonrası)</dt><dd class="strong">${tl(c.net)} (${usd(c.netUsd)})</dd>
+      <dt class="strong">Hane genel toplam (Fonlar + Dolar + Nakit)</dt><dd class="strong">${tl(c.netAll)} (${usd(c.netAllUsd)})</dd>
+    </dl>
+    ${s.note ? `<p class="note" style="margin:10px 0 0">Gün notu: <b>${esc(s.note)}</b></p>` : ''}
+  </div>`;
+
+  updateVsUsdComparisonUI();
+
+  const btnToday = $('#b-sum-today');
+  if (btnToday) btnToday.addEventListener('click', () => {
+    summaryDate = null;
+    cmpEndDate = todayStr();
+    renderSummary();
+  });
+  $('#b-sum-cal').addEventListener('click', () => {
+    calSelectedDate = activeDate;
+    calYear = Number(activeDate.slice(0, 4));
+    calMonth = Number(activeDate.slice(5, 7));
+    switchTab('takvim');
+  });
+  $('#b-sum-edit').addEventListener('click', () => { fillForm(activeDate); switchTab('guncelle'); });
+  $('#b-sum-assets').addEventListener('click', () => { fillForm(activeDate); switchTab('guncelle'); });
+
+  const inD0 = $('#vs-d0'), inD1 = $('#vs-d1');
+  const onD0Change = () => { cmpStartDate = inD0.value; updateVsUsdComparisonUI(); ensureDateFxAndRefresh(cmpStartDate); };
+  const onD1Change = () => { cmpEndDate = inD1.value; updateVsUsdComparisonUI(); ensureDateFxAndRefresh(cmpEndDate); };
+  inD0.addEventListener('change', onD0Change);
+  inD0.addEventListener('input', onD0Change);
+  inD1.addEventListener('change', onD1Change);
+  inD1.addEventListener('input', onD1Change);
+
+  $('#tab-ozet').querySelectorAll('[data-vspreset]').forEach(b => b.addEventListener('click', () => {
+    const pr = b.dataset.vspreset;
+    if (pr === 'weekend') {
+      const w = wdayIndex(activeDate);
+      const lastFri = w === 1 ? addDays(activeDate, -3) : w === 0 ? addDays(activeDate, -2) : w === 6 ? addDays(activeDate, -1) : addDays(activeDate, -3);
+      cmpStartDate = lastFri;
+      cmpEndDate = activeDate;
+    }
+    else if (pr === '7d') { cmpStartDate = addDays(activeDate, -7); cmpEndDate = activeDate; }
+    else if (pr === '30d') { cmpStartDate = addDays(activeDate, -30); cmpEndDate = activeDate; }
+    else if (pr === '90d') { cmpStartDate = addDays(activeDate, -90); cmpEndDate = activeDate; }
+    else if (pr === '180d') { cmpStartDate = addDays(activeDate, -180); cmpEndDate = activeDate; }
+    else if (pr === 'ytd') { cmpStartDate = activeDate.slice(0, 4) + '-01-01'; cmpEndDate = activeDate; }
+    else if (pr === '365d') { cmpStartDate = addDays(activeDate, -365); cmpEndDate = activeDate; }
+    inD0.value = cmpStartDate;
+    inD1.value = cmpEndDate;
+    updateVsUsdComparisonUI();
+    ensureDateFxAndRefresh(cmpStartDate);
+    ensureDateFxAndRefresh(cmpEndDate);
+  }));
+
+  $('#b-vs-fetch-fx').addEventListener('click', async e => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'Kurlar çekiliyor…';
+    if (cmpStartDate && !snapOn(cmpStartDate)) await getUsdTryForDate(cmpStartDate);
+    if (cmpEndDate) {
+      if (cmpEndDate === todayStr()) await refreshLiveRate(false);
+      else if (!snapOn(cmpEndDate)) await getUsdTryForDate(cmpEndDate);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Seçili tarihlerin kurlarını çek';
+    updateVsUsdComparisonUI();
+    const sA = buildVirtualSnap(cmpStartDate), sB = buildVirtualSnap(cmpEndDate);
+    toast(dmy(cmpStartDate) + ': ' + nf(4).format(sA.fx) + ' TL → ' + dmy(cmpEndDate) + ': ' + nf(4).format(sB.fx) + ' TL');
+  });
+}
+
+/* ---------- Takvim ---------- */
+function renderCalendar() {
+  const today = todayStr();
+  if (!calYear || !calMonth) {
+    calYear = Number(today.slice(0, 4));
+    calMonth = Number(today.slice(5, 7));
+  }
+  if (!calSelectedDate) calSelectedDate = summaryDate || today;
+
+  const firstDayUtc = new Date(Date.UTC(calYear, calMonth - 1, 1));
+  const monStartOffset = (firstDayUtc.getUTCDay() + 6) % 7; // Pazartesi = 0
+  const daysInMonth = new Date(Date.UTC(calYear, calMonth, 0)).getUTCDate();
+
+  let cells = '';
+  for (let i = 0; i < monStartOffset; i++) {
+    cells += `<div class="cal-cell empty"></div>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = calYear + '-' + String(calMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const ex = snapOn(ds);
+    const vSnap = buildVirtualSnap(ds);
+    const c = snapCalc(S.base, vSnap);
+    const classes = ['cal-cell'];
+    if (ex) classes.push('has-snap');
+    if (ds === today) classes.push('is-today');
+    if (ds === calSelectedDate) classes.push('is-sel');
+    cells += `<button type="button" class="${classes.join(' ')}" data-cdate="${ds}">
+      <span class="dnum"><span>${d}</span>${ex ? '<span class="dot" title="Kayıtlı gün"></span>' : ''}</span>
+      <span class="dval">${nf(2).format(c.net / 1e6)} mn TL<br>${nf(1).format(c.netUsd / 1e3)}k $</span>
+    </button>`;
+  }
+
+  const selSnap = buildVirtualSnap(calSelectedDate);
+  const selCalc = snapCalc(S.base, selSnap);
+  const selGainLabel = selCalc.refDays === 3
+    ? 'Pazartesi yansıyan (3 günlük hafta sonu net)'
+    : selCalc.refDays === 0
+      ? 'Hafta sonu yansıyan (Pazartesi 3 günlük yansır)'
+      : 'O günkü net fon kazancı (1 gün)';
+  const selGainVal = selCalc.refDays === 0
+    ? `0,00 TL <span class="note">(1 gün karşılığı: ${sgn(selCalc.dNet1, tl)})</span>`
+    : `${sgn(selCalc.dNet, tl)} (${sgn(r2(selCalc.dNet / selSnap.fx), usd)})`;
+
+  $('#tab-takvim').innerHTML = `
+  <div class="panel">
+    <div class="cal-nav">
+      <div class="row" style="gap:6px">
+        <button class="btn small" id="cal-prev" type="button">‹ Önceki ay</button>
+        <button class="btn small" id="cal-today" type="button">Bugün (${dmy(today)})</button>
+        <button class="btn small" id="cal-next" type="button">Sonraki ay ›</button>
+      </div>
+      <h2 class="cal-title">${MONTHS[calMonth - 1]} ${calYear}</h2>
+    </div>
+    <div class="cal-whead">
+      <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
+    </div>
+    <div class="cal-grid">${cells}</div>
+    <p class="note" style="margin:10px 0 0">● Mavi noktalı günler doğrudan kaydettiğiniz günlerdir. Cumartesi ve Pazar günleri Cuma fon fiyatı sabit kalır; 3 günlük hafta sonu getirisi Pazartesi günü yansır.</p>
+  </div>
+
+  <div class="panel">
+    <div class="head">
+      <div>
+        <h2>${dmyLong(calSelectedDate)} ${calSelectedDate === today ? '<span class="tag live">Bugün</span>' : ''} ${selSnap.isSaved ? '<span class="tag live">Kayıtlı</span>' : '<span class="tag">Otomatik hesap</span>'}</h2>
+      </div>
+      <div class="row" style="gap:6px">
+        <button class="btn small" id="cal-view-ozet" type="button">Özette göster</button>
+        <button class="btn small" id="cal-edit-day" type="button">${selSnap.isSaved ? 'Kaydı düzenle' : 'Bu güne kayıt gir'}</button>
+      </div>
+    </div>
+    <dl class="rows" style="margin-top:12px">
+      <dt class="strong">Fonlar stopaj sonrası net</dt><dd class="strong">${tl(selCalc.net)} (${usd(selCalc.netUsd)})</dd>
+      <dt>Fonlar brüt (Batuhan + Aybüke)</dt><dd>${tl(selCalc.gross)} (${tl(selCalc.Y.value)} + ${tl(selCalc.T.value)})</dd>
+      <dt>Batuhan YPT net / Aybüke TZL net</dt><dd>${tl(selCalc.Y.net)} / ${tl(selCalc.T.net)}</dd>
+      <dt>Toplam varlık (Fon + Dolar + TL)</dt><dd>${tl(selCalc.netAll)} (${usd(selCalc.netAllUsd)})</dd>
+      <dt>Nakit Dolar (Batuhan + Aybüke)</dt><dd>${usd(selCalc.totUsdCash)} (${tl(selCalc.totUsdTl)})</dd>
+      <dt>Nakit TL ve diğer varlıklar</dt><dd>${tl(r2(selCalc.other - selCalc.totUsdTl))}</dd>
+      <dt>Dolar kuru (USD/TRY)</dt><dd>${nf(4).format(selSnap.fx)} (${esc(selSnap.fxSrc || 'Kayıtlı')})</dd>
+      <dt>${selGainLabel}</dt><dd class="${cls(selCalc.dNet)}">${selGainVal}</dd>
+      ${selSnap.note ? `<dt>Not</dt><dd>${esc(selSnap.note)}</dd>` : ''}
+    </dl>
+  </div>`;
+
+  $('#cal-prev').addEventListener('click', () => {
+    calMonth--; if (calMonth < 1) { calMonth = 12; calYear--; }
+    renderCalendar();
+  });
+  $('#cal-next').addEventListener('click', () => {
+    calMonth++; if (calMonth > 12) { calMonth = 1; calYear++; }
+    renderCalendar();
+  });
+  $('#cal-today').addEventListener('click', () => {
+    calYear = Number(today.slice(0, 4));
+    calMonth = Number(today.slice(5, 7));
+    calSelectedDate = today;
+    summaryDate = null;
+    cmpEndDate = today;
+    renderCalendar();
+    renderSummary();
+  });
+  $('#tab-takvim').querySelectorAll('[data-cdate]').forEach(b => b.addEventListener('click', () => {
+    calSelectedDate = b.dataset.cdate;
+    renderCalendar();
+  }));
+  $('#cal-view-ozet').addEventListener('click', () => {
+    summaryDate = calSelectedDate === today ? null : calSelectedDate;
+    cmpEndDate = calSelectedDate;
+    renderSummary();
+    switchTab('ozet');
+  });
+  $('#cal-edit-day').addEventListener('click', () => {
+    fillForm(calSelectedDate);
+    switchTab('guncelle');
+  });
+}
+
+/* ---------- Güncelle ---------- */
+const F = {
+  date: $('#f-date'), fx: $('#f-fx'), py: $('#f-py'), pt: $('#f-pt'), ry: $('#f-ry'), rt: $('#f-rt'),
+  yu: $('#f-yu'), tu: $('#f-tu'), yc: $('#f-yc'), tc: $('#f-tc'),
+  bu: $('#f-bu'), au: $('#f-au'), oc: $('#f-oc'), oa: $('#f-oa'), of: $('#f-of'), os: $('#f-os'),
+  note: $('#f-note')
+};
+
+function refFor(date) { return prevOf(date) || nextOf(date) || latest(); }
+
+function readForm() {
+  const date = F.date.value, errs = [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) errs.push('Tarih seçin.');
+  const fx = parseNum(F.fx.value);
+  if (!(fx > 0)) errs.push('USD/TRY kurunu girin.');
+  const rY = parseNum(F.ry.value), rT = parseNum(F.rt.value);
+  if (!Number.isFinite(rY) || Math.abs(rY) > 5) errs.push('YPT günlük değişimini girin (örn. 0,0951).');
+  if (!Number.isFinite(rT) || Math.abs(rT) > 5) errs.push('TZL günlük değişimini girin (örn. 0,0970).');
+  let pY = parseNum(F.py.value), pT = parseNum(F.pt.value), estY = false, estT = false;
+  const ref = /^\d{4}-\d{2}-\d{2}$/.test(date) ? refFor(date) : null;
+  if (!F.py.value.trim() && ref && Number.isFinite(rY)) { pY = estimatePrice(ref.pY, ref.date, date, rY); estY = true; }
+  if (!F.pt.value.trim() && ref && Number.isFinite(rT)) { pT = estimatePrice(ref.pT, ref.date, date, rT); estT = true; }
+  if (!(pY > 0)) errs.push('YPT fiyatını girin veya boş bırakın.');
+  if (!(pT > 0)) errs.push('TZL fiyatını girin veya boş bırakın.');
+
+  const yUnits = parseNum(F.yu.value), tUnits = parseNum(F.tu.value);
+  const yCost = parseNum(F.yc.value), tCost = parseNum(F.tc.value);
+  if (!(yUnits > 0 && tUnits > 0)) errs.push('Pay adetleri sıfırdan büyük olmalı.');
+  if (!(yCost >= 0 && tCost >= 0)) errs.push('Maliyet değerleri geçersiz.');
+
+  const bUsd = F.bu.value.trim() === '' ? 0 : parseNum(F.bu.value);
+  const aUsd = F.au.value.trim() === '' ? 0 : parseNum(F.au.value);
+  const bCash = F.oc.value.trim() === '' ? 0 : parseNum(F.oc.value);
+  const aCash = F.oa.value.trim() === '' ? 0 : parseNum(F.oa.value);
+  const bFx = F.of.value.trim() === '' ? 0 : parseNum(F.of.value);
+  const bStock = F.os.value.trim() === '' ? 0 : parseNum(F.os.value);
+  if (![bUsd, aUsd, bCash, aCash, bFx, bStock].every(x => Number.isFinite(x) && x >= 0)) {
+    errs.push('Nakit, dolar ve diğer varlık tutarları negatif veya geçersiz olamaz.');
+  }
+
+  return {
+    date, fx, pY, pT, rY, rT, estY, estT,
+    yUnits, yCost, tUnits, tCost,
+    other: { bUsd, aUsd, bCash, aCash, bFx, bStock },
+    note: F.note.value.trim(),
+    errs
+  };
+}
+
+function updateHints() {
+  const date = F.date.value; if (!date) return;
+  const ref = refFor(date);
+  const rY = parseNum(F.ry.value), rT = parseNum(F.rt.value);
+  const h = (el, key, r, cur) => {
+    if (cur.value.trim() || !ref || !Number.isFinite(r)) { el.textContent = ''; cur.placeholder = ''; return; }
+    const v = estimatePrice(ref[key], ref.date, date, r);
+    cur.placeholder = 'tahmin ' + inNum(v, 6);
+    el.textContent = 'Boşsa ' + dmy(ref.date) + ' fiyatından tahmin';
+  };
+  h($('#h-py'), 'pY', rY, F.py); h($('#h-pt'), 'pT', rT, F.pt);
+  $('#h-ry').textContent = Number.isFinite(rY) ? 'Yıllık karşılığı ' + pct(annualFromDaily(rY), 1) : '';
+  $('#h-rt').textContent = Number.isFinite(rT) ? 'Yıllık karşılığı ' + pct(annualFromDaily(rT), 1) : '';
+  const fx = parseNum(F.fx.value);
+  const bu = parseNum(F.bu.value), au = parseNum(F.au.value);
+  $('#h-bu').textContent = (Number.isFinite(bu) && bu > 0 && fx > 0) ? '≈ ' + tl(r2(bu * fx)) : '';
+  $('#h-au').textContent = (Number.isFinite(au) && au > 0 && fx > 0) ? '≈ ' + tl(r2(au * fx)) : '';
+}
+
+function updatePreview() {
+  updateHints();
+  const r = readForm(), el = $('#preview');
+  if (r.errs.length) { el.innerHTML = '<p class="err">' + r.errs.map(esc).join('<br>') + '</p>'; $('#b-save').disabled = true; return; }
+  $('#b-save').disabled = false;
+  const c = snapCalc(S.base, r), p = prevOf(r.date);
+  let d = '';
+  if (p) {
+    const pc = snapCalc(S.base, p), n = Math.max(1, daysBetween(p.date, r.date));
+    const dT = r2(c.netAll - pc.netAll), dU = r2(c.netAllUsd - pc.netAllUsd);
+    d = `<p class="note">${dmy(p.date)} kaydına göre (${n} gün): <span class="${cls(dT)}">${sgn(dT, tl)}</span> / <span class="${cls(dU)}">${sgn(dU, usd)}</span></p>`;
+  }
+  const ex = S.snaps.some(x => x.date === r.date);
+  el.innerHTML = `<p class="label">Bu değerlerle toplam fon net (Stopaj sonrası)</p>
+    <p style="font-weight:600;font-size:18px">${tl(c.net)} (${usd(c.netUsd)})</p>
+    <p class="note">Batuhan YPT brüt ${tl(c.Y.value)} (net ${tl(c.Y.net)}) · Aybüke TZL brüt ${tl(c.T.value)} (net ${tl(c.T.net)})</p>
+    <p class="note">Tüm varlıklar genel toplam: ${tl(c.netAll)} (${usd(c.netAllUsd)})</p>${d}
+    ${ex ? '<p class="note">Bu tarihte kayıt var; kaydetmek onu günceller.</p>' : ''}`;
+  $('#b-save').textContent = ex ? 'Kaydı güncelle' : 'Kaydet';
+}
+
+function fillForm(date) {
+  F.date.value = date;
+  const ex = S.snaps.find(x => x.date === date);
+  const ref = ex || snapOnOrBefore(date) || latest();
+  const A = resolveSnapAssets(S.base, ref);
+
+  if (ex) {
+    const useLive = (date === todayStr() && liveFx && liveFx.rate > 0 && !ex.fxManual);
+    const curFx = useLive ? liveFx.rate : ex.fx;
+    const curSrc = useLive ? (liveFx.src + ' (' + liveFx.timeStr + ')') : (ex.fxSrc || 'Elle girildi');
+    F.fx.value = inNum(curFx, 4); fxSrcCur = curSrc;
+    F.py.value = ex.estY ? '' : inNum(ex.pY, 6);
+    F.pt.value = ex.estT ? '' : inNum(ex.pT, 6);
+    F.note.value = ex.note || '';
+    $('#fx-status').textContent = (useLive ? 'Canlı kur: ' : 'Kayıtlı kur: ') + curSrc;
+  } else {
+    F.py.value = ''; F.pt.value = ''; F.note.value = '';
+    const hist = lookupHistoricalFx(date, dateFxCache);
+    if (date === todayStr() && liveFx && liveFx.rate > 0) {
+      F.fx.value = inNum(liveFx.rate, 4);
+      fxSrcCur = liveFx.src + ' (' + liveFx.timeStr + ')';
+      $('#fx-status').textContent = 'Canlı kur: ' + fxSrcCur;
+    } else if (hist && hist.rate > 0) {
+      F.fx.value = inNum(hist.rate, 4);
+      fxSrcCur = hist.src;
+      $('#fx-status').textContent = 'Kaynak: ' + fxSrcCur;
+    } else {
+      F.fx.value = inNum(ref.fx, 4);
+      fxSrcCur = ref.fxSrc || 'Önceki kayıt kuru';
+      $('#fx-status').textContent = '';
+    }
+  }
+  F.ry.value = inNum(ref.rY, 4); F.rt.value = inNum(ref.rT, 4);
+  F.yu.value = inNum(A.yUnits, 0); F.tu.value = inNum(A.tUnits, 0);
+  F.yc.value = inNum(A.yCost, 2); F.tc.value = inNum(A.tCost, 2);
+  F.bu.value = inNum(A.bUsd, 2); F.au.value = inNum(A.aUsd, 2);
+  F.oc.value = inNum(A.bCash, 2); F.oa.value = inNum(A.aCash, 2);
+  F.of.value = inNum(A.bFx, 2); F.os.value = inNum(A.bStock, 2);
+
+  updatePreview();
+  if (!ex) fetchFx(false);
+}
+
+async function fetchFx(forceLive = false) {
+  const date = F.date.value; if (!date) return;
+  const my = ++fxToken, btn = $('#b-fx'), btnLive = $('#b-fx-live');
+  btn.disabled = true; btnLive.disabled = true;
+  $('#fx-status').textContent = 'Canlı dolar kuru çekiliyor…';
+  let res = null;
+  if (forceLive || date === todayStr()) {
+    const l = await getLiveUsdTry();
+    if (l) {
+      liveFx = l;
+      res = { rate: l.rate, buy: l.buy, date: todayStr(), src: l.src + ' (' + l.timeStr + ')' };
+    }
+  } else {
+    res = await getUsdTryForDate(date);
+  }
+  if (my !== fxToken) return;
+  btn.disabled = false; btnLive.disabled = false;
+  if (res) {
+    F.fx.value = inNum(roundTo(res.rate, 4), 4);
+    fxSrcCur = res.src + (res.date && res.date !== date && !forceLive ? ', ' + dmy(res.date) + ' kuru' : '');
+    $('#fx-status').textContent = 'Kaynak: ' + fxSrcCur;
+    if (forceLive || date === todayStr()) {
+      const buyTxt = liveFx && liveFx.buy ? ' (Alış ' + nf(4).format(liveFx.buy) + ')' : '';
+      $('#live-fx-txt').textContent = 'Canlı 1$ = ' + nf(4).format(res.rate) + ' TL' + buyTxt + ' · ' + (liveFx ? liveFx.timeStr : nowTimeStr());
+      const ex = snapOn(todayStr());
+      if (ex && !ex.fxManual) {
+        ex.fx = res.rate;
+        ex.fxSrc = fxSrcCur;
+        persist();
+      }
+      renderSummary();
+    }
+  } else {
+    $('#fx-status').innerHTML = 'Kur otomatik alınamadı; elle girin. <a href="https://www.tcmb.gov.tr/kurlar/kurlar_tr.html" target="_blank" rel="noopener">TCMB kurları</a>';
+  }
+  updatePreview();
+}
+
+F.date.addEventListener('change', () => { if (F.date.value) fillForm(F.date.value); });
+F.fx.addEventListener('input', () => { fxSrcCur = 'Elle girildi'; $('#fx-status').textContent = ''; updatePreview(); });
+[F.py, F.pt, F.ry, F.rt, F.yu, F.tu, F.yc, F.tc, F.bu, F.au, F.oc, F.oa, F.of, F.os, F.note].forEach(el => el.addEventListener('input', updatePreview));
+$('#b-fx').addEventListener('click', () => fetchFx(false));
+$('#b-fx-live').addEventListener('click', () => fetchFx(true));
+$('#b-form-today').addEventListener('click', () => fillForm(todayStr()));
+
+$('#b-save').addEventListener('click', () => {
+  const r = readForm(); if (r.errs.length) return;
+  const snap = {
+    date: r.date, fx: r.fx, fxSrc: fxSrcCur || 'Elle girildi', fxManual: fxSrcCur === 'Elle girildi',
+    pY: r.pY, pT: r.pT, rY: r.rY, rT: r.rT, estY: r.estY, estT: r.estT,
+    yUnits: r.yUnits, yCost: r.yCost, tUnits: r.tUnits, tCost: r.tCost,
+    other: r.other, note: r.note
+  };
+  S.snaps = S.snaps.filter(x => x.date !== r.date).concat(snap);
+  if (r.date >= latest().date) {
+    S.base.ypt.units = r.yUnits; S.base.ypt.cost = r.yCost;
+    S.base.tzl.units = r.tUnits; S.base.tzl.cost = r.tCost;
+    S.base.other = Object.assign({}, S.base.other, r.other);
+  }
+  summaryDate = r.date === todayStr() ? null : r.date;
+  cmpEndDate = r.date;
+  calSelectedDate = r.date;
+  persist(); renderAll(); switchTab('ozet'); toast(dmy(r.date) + ' kaydı kaydedildi');
+});
+
+/* ---------- Ayarlar & Yedekleme ---------- */
+const SET = {
+  yu: ['ypt', 'units', 0], tu: ['tzl', 'units', 0], yc: ['ypt', 'cost', 2], tc: ['tzl', 'cost', 2],
+  yt: ['ypt', 'tax', 1], tt: ['tzl', 'tax', 1],
+  bu: ['other', 'bUsd', 2], au: ['other', 'aUsd', 2],
+  oc: ['other', 'bCash', 2], oa: ['other', 'aCash', 2], of: ['other', 'bFx', 2], os: ['other', 'bStock', 2]
+};
+function fillSettings() {
+  for (const k in SET) {
+    const [g, f, d] = SET[k];
+    $('#s-' + k).value = inNum(S.base[g][f] || 0, d);
+  }
+  $('#s-err').hidden = true;
+}
+$('#b-sset').addEventListener('click', () => {
+  const nb = JSON.parse(JSON.stringify(S.base)), errs = [];
+  for (const k in SET) {
+    const [g, f] = SET[k], v = parseNum($('#s-' + k).value);
+    if (!Number.isFinite(v) || v < 0) errs.push($('label[for="s-' + k + '"]').textContent + ' geçersiz.');
+    else nb[g][f] = v;
+  }
+  if (!(nb.ypt.units > 0 && nb.tzl.units > 0)) errs.push('Pay adedi sıfırdan büyük olmalı.');
+  if (nb.ypt.tax > 100 || nb.tzl.tax > 100) errs.push('Stopaj oranı %100’ü geçemez.');
+  if (errs.length) { $('#s-err').innerHTML = errs.map(esc).join('<br>'); $('#s-err').hidden = false; return; }
+  S.base = nb; persist(); renderAll(); fillForm(F.date.value || todayStr()); toast('Ayarlar kaydedildi');
+});
+$('#b-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hane-fon-yedek-' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('#f-import').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    if (!valid(parsed)) throw new Error('Geçersiz dosya');
+    parsed.base.other = Object.assign({ bUsd: 0, aUsd: 0 }, parsed.base.other);
+    S = parsed; persist(); renderAll(); fillForm(todayStr()); toast('Yedek başarıyla yüklendi');
+  } catch (err) {
+    toast('Yedek dosyası okunamadı');
+  }
+  e.target.value = '';
+});
+$('#b-reset').addEventListener('click', e => confirmTwice(e.currentTarget, 'Başlangıç verilerine dön', () => {
+  S = JSON.parse(JSON.stringify(DEFAULTS)); summaryDate = null; cmpStartDate = null; cmpEndDate = null; persist(); renderAll(); fillForm(todayStr()); toast('Başlangıç verileri yüklendi');
+}));
+
+/* ---------- Projeksiyon ---------- */
+function projOpts() {
+  const s = buildVirtualSnap(todayStr()), p = S.proj;
+  return {
+    target: p.target && p.target > s.date && p.target <= END_DATE ? p.target : END_DATE,
+    fxg: Number.isFinite(p.fxg) ? p.fxg : 19,
+    rEndY: Number.isFinite(p.rEndY) ? p.rEndY : s.rY,
+    rEndT: Number.isFinite(p.rEndT) ? p.rEndT : s.rT
+  };
+}
+
+function chartPoints(P, s0) {
+  const pts = [P.at(0)];
+  let y = Number(s0.date.slice(0, 4)), m = Number(s0.date.slice(5, 7));
+  for (;;) {
+    const me = dstr(Math.round(Date.UTC(y, m, 0) / 86400000));
+    if (me > END_DATE) break;
+    if (me > s0.date) pts.push(P.at(daysBetween(s0.date, me)));
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return pts;
+}
+
+function drawChart(pts, s0, W) {
+  const H = W < 500 ? 210 : 250, L = 50, R = 12, T = 12, B = 28;
+  const N = pts[pts.length - 1].k || 1;
+  const val = p => chartMode === 'TL' ? p.c.netAll : p.c.netAllUsd;
+  const vs = pts.map(val);
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  const pad = (hi - lo) * 0.08 || Math.abs(hi) * 0.05 || 1; lo -= pad; hi += pad;
+  const X = k => L + (W - L - R) * k / N, Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const lab = v => chartMode === 'TL' ? nf(1).format(v / 1e6) + ' mn' : nf(0).format(v / 1e3) + ' bin';
+  let g = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = lo + (hi - lo) * i / 4, y = Y(v).toFixed(1);
+    g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+      <text x="${L - 6}" y="${y}" dy="4" text-anchor="end" font-size="11" fill="var(--muted)">${lab(v)}</text>`;
+  }
+  ['2027-01-01', '2028-01-01'].forEach(d => {
+    if (d <= s0.date) return;
+    const x = X(daysBetween(s0.date, d)).toFixed(1);
+    g += `<line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="var(--line)" stroke-dasharray="3 3"/>
+      <text x="${x}" y="${H - 10}" text-anchor="middle" font-size="11" fill="var(--muted)">${d.slice(0, 4)}</text>`;
+  });
+  g += `<text x="${W - R}" y="${H - 10}" text-anchor="end" font-size="11" fill="var(--muted)">2028 sonu</text>`;
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + X(p.k).toFixed(1) + ' ' + Y(val(p)).toFixed(1)).join(' ');
+  const area = d + ` L ${X(N).toFixed(1)} ${H - B} L ${X(0).toFixed(1)} ${H - B} Z`;
+  return { svg: `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Hane net varlık projeksiyonu">${g}
+    <path d="${area}" fill="var(--b-soft)" opacity=".55"/>
+    <path d="${d}" fill="none" stroke="var(--b)" stroke-width="2.25" stroke-linejoin="round"/>
+    <line id="cx" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="1" opacity=".5"/>
+    <circle id="cc" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>
+    <rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="hit"/></svg>`, X, Y, val, W, L, R };
+}
+
+function msRows(r, base0) {
+  const c = r.c, dT = r2(c.netAll - base0.netAll), dU = r2(c.netAllUsd - base0.netAllUsd);
+  return `<dl class="rows">
+    <dt>Toplam net (Fon + Dolar + TL)</dt><dd>${tl(c.netAll)} (${usd(c.netAllUsd)})</dd>
+    <dt>Sadece fonlar net</dt><dd>${tl(c.net)} (${usd(c.netUsd)})</dd>
+    <dt>Batuhan fon net</dt><dd>${tl(c.Y.net)}</dd>
+    <dt>Aybüke fon net</dt><dd>${tl(c.T.net)}</dd>
+    <dt>Toplam stopaj</dt><dd>${tl(c.tax)}</dd>
+    <dt>Bugüne göre artış</dt><dd class="${cls(dT)}">${sgn(dT, tl)} (${sgn(dU, usd)})</dd>
+    <dt>Varsayılan kur</dt><dd>${nf(4).format(c.fx)}</dd>
+    <dt>YPT / TZL fiyat</dt><dd>${nf(6).format(r.snap.pY)} / ${nf(6).format(r.snap.pT)}</dd>
+  </dl>`;
+}
+
+let PC = null, lastChartW = 0;
+function paintChart() {
+  const box = $('#chartbox'); if (!PC || !box || tab !== 'proj') return;
+  const { P, s, kT } = PC, W = Math.max(280, Math.round(box.clientWidth || 600));
+  lastChartW = W;
+  const ch = drawChart(chartPoints(P, s), s, W);
+  box.innerHTML = ch.svg;
+  const svg = box.querySelector('svg'), N = P.N;
+  const show = k => {
+    const r = P.at(k);
+    const x = ch.X(r.k).toFixed(1), y = ch.Y(ch.val(r)).toFixed(1);
+    $('#cx').setAttribute('x1', x); $('#cx').setAttribute('x2', x);
+    $('#cc').setAttribute('cx', x); $('#cc').setAttribute('cy', y);
+    $('#readout').innerHTML = `<span class="d">${dmy(r.snap.date)}</span>
+      <span>Fon Net ${tl(r.c.net)}</span><span>${usd(r.c.netUsd)}</span>
+      <span class="note">Batuhan ${tl(r.c.Y.net)}</span><span class="note">Aybüke ${tl(r.c.T.net)}</span>`;
+  };
+  const fromEvt = e => {
+    const b = svg.getBoundingClientRect(), sx = (e.clientX - b.left) / b.width * ch.W;
+    scrubK = Math.max(0, Math.min(N, Math.round((sx - ch.L) / (ch.W - ch.L - ch.R) * N)));
+    show(scrubK);
+  };
+  svg.addEventListener('pointerdown', fromEvt);
+  svg.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) fromEvt(e); });
+  show(scrubK != null && scrubK <= N ? scrubK : kT);
+}
+let rzT;
+window.addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(() => { const box = $('#chartbox'); if (tab === 'proj' && box && Math.abs(box.clientWidth - lastChartW) > 2) paintChart(); }, 150);
+});
+
+function renderProjection() {
+  const s = buildVirtualSnap(todayStr()), el = $('#tab-proj');
+  if (s.date >= END_DATE) { el.innerHTML = '<div class="panel"><p>Projeksiyon dönemi tamamlandı.</p></div>'; return; }
+  const o = projOpts();
+  el.innerHTML = `
+  <div class="panel">
+    <h2>Varsayımlar (Bugün: ${dmy(s.date)} baz alınarak)</h2>
+    <p class="note" style="margin:2px 0 12px">Günlük getiri bugünkü değerden 2028 sonu değerine doğrusal değişir; hafta sonu getirileri Pazartesi günleri 3 günlük olarak yansır.</p>
+    <div class="form">
+      <div class="field"><label for="p-tg">Hedef tarih</label><input type="date" id="p-tg" min="${addDays(s.date, 1)}" max="${END_DATE}" value="${o.target}"><div class="hint" id="hp-tg"></div></div>
+      <div class="field"><label for="p-fx">Yıllık kur artışı (%)</label><input id="p-fx" inputmode="decimal" autocomplete="off" value="${inNum(o.fxg, 1)}"><div class="hint" id="hp-fx"></div></div>
+      <div class="field"><label for="p-ry">2028 sonu YPT günlük (%)</label><input id="p-ry" inputmode="decimal" autocomplete="off" placeholder="${inNum(s.rY, 4)}" value="${Number.isFinite(S.proj.rEndY) ? inNum(S.proj.rEndY, 4) : ''}"><div class="hint" id="hp-ry"></div></div>
+      <div class="field"><label for="p-rt">2028 sonu TZL günlük (%)</label><input id="p-rt" inputmode="decimal" autocomplete="off" placeholder="${inNum(s.rT, 4)}" value="${Number.isFinite(S.proj.rEndT) ? inNum(S.proj.rEndT, 4) : ''}"><div class="hint" id="hp-rt"></div></div>
+    </div>
+  </div>
+  <div id="proj-res"></div>`;
+  let t;
+  const onEdit = () => { clearTimeout(t); t = setTimeout(() => { readProj(); renderProjResults(); persist(); }, 250); };
+  $('#p-tg').addEventListener('change', onEdit);
+  ['#p-fx', '#p-ry', '#p-rt'].forEach(id => $(id).addEventListener('input', onEdit));
+  renderProjResults();
+}
+
+function readProj() {
+  const s = buildVirtualSnap(todayStr()), tg = $('#p-tg').value, fx = parseNum($('#p-fx').value);
+  if (tg && tg > s.date && tg <= END_DATE) S.proj.target = tg;
+  if (Number.isFinite(fx) && fx > -100 && fx <= 500) S.proj.fxg = fx;
+  [['#p-ry', 'rEndY'], ['#p-rt', 'rEndT']].forEach(([id, key]) => {
+    const raw = $(id).value.trim(), v = parseNum(raw);
+    if (raw === '') S.proj[key] = null;
+    else if (Number.isFinite(v) && Math.abs(v) <= 5) S.proj[key] = v;
+  });
+  scrubK = null;
+}
+
+function renderProjResults() {
+  const s = buildVirtualSnap(todayStr()), o = projOpts(), P = buildProjection(S.base, s, o), base0 = snapCalc(S.base, s);
+  const bad = (id, ok) => ok ? '' : 'Geçersiz değer; son geçerli değer kullanılıyor. ';
+  const fxRaw = parseNum($('#p-fx').value);
+  $('#hp-tg').textContent = daysBetween(s.date, o.target) + ' gün sonra';
+  $('#hp-fx').textContent = bad('fx', Number.isFinite(fxRaw) && fxRaw > -100 && fxRaw <= 500) + '2028 sonu kuru ' + nf(2).format(P.at(P.N).c.fx);
+  [['#p-ry', 'hp-ry', 'rEndY'], ['#p-rt', 'hp-rt', 'rEndT']].forEach(([id, hid, key]) => {
+    const raw = $(id).value.trim(), v = parseNum(raw);
+    const ok = raw === '' || (Number.isFinite(v) && Math.abs(v) <= 5);
+    $('#' + hid).textContent = bad(hid, ok) + 'Yıllık karşılığı ' + pct(annualFromDaily(o[key]), 1) + (Number.isFinite(S.proj[key]) ? '' : ', sabit');
+  });
+  const kT = daysBetween(s.date, o.target), RT = P.at(kT);
+  const dT = r2(RT.c.net - base0.net), dU = r2(RT.c.netUsd - base0.netUsd);
+  const dates = MILESTONES.filter(d => d > s.date);
+  if (!dates.includes(o.target)) dates.push(o.target);
+  dates.sort();
+  const ms = dates.map(d => {
+    const r = P.at(daysBetween(s.date, d));
+    return `<details class="ms"><summary><span>${dmy(d)}${d === o.target ? '<span class="tag">hedef</span>' : ''}</span>
+      <span class="r">${tl(r.c.net)}<small>${usd(r.c.netUsd)}</small></span></summary>${msRows(r, base0)}</details>`;
+  }).join('');
+  $('#proj-res').innerHTML = `
+  <div class="panel hero">
+    <p class="label">${dmy(o.target)} itibarıyla toplam fon net (stopaj sonrası)</p>
+    <p class="big">${tl(RT.c.net)}</p>
+    <p class="usd">${usd(RT.c.netUsd)} <small>kur ${nf(2).format(RT.c.fx)}</small></p>
+    <p style="margin:10px 0 0"><span class="${cls(dT)}" style="font-weight:600">${sgn(dT, tl)}</span> <span class="${cls(dU)}">/ ${sgn(dU, usd)}</span> <span class="note">${kT} günde</span></p>
+    <p class="note" style="margin:4px 0 0">Diğer varlıklarla genel toplam: ${tl(RT.c.netAll)} (${usd(RT.c.netAllUsd)}), toplam stopaj ${tl(RT.c.tax)}</p>
+  </div>
+  <div class="panel">
+    <div class="head"><h2>2028 sonuna kadar</h2>
+      <div class="toggle" role="group" aria-label="Para birimi"><button type="button" data-m="TL" aria-pressed="${chartMode === 'TL'}">TL</button><button type="button" data-m="USD" aria-pressed="${chartMode === 'USD'}">USD</button></div></div>
+    <div class="chartbox" id="chartbox"></div>
+    <div class="readout" id="readout"></div>
+  </div>
+  <div class="panel"><h2>Ara tarihler</h2><p class="note" style="margin:2px 0 4px">Ayrıntı için tarihe dokunun.</p><div>${ms}</div></div>`;
+  PC = { P, s, kT };
+  paintChart();
+  $('#proj-res').querySelectorAll('.toggle button').forEach(b => b.addEventListener('click', () => {
+    chartMode = b.dataset.m;
+    $('#proj-res').querySelectorAll('.toggle button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.m === chartMode)));
+    paintChart();
+  }));
+}
+
+/* ---------- Kayıtlar ---------- */
+function renderLog() {
+  const list = sorted();
+  const rows = list.map((s, i) => {
+    const c = snapCalc(S.base, s), p = list[i - 1];
+    let d = '<p class="meta">İlk kayıt</p>';
+    if (p) {
+      const pc = snapCalc(S.base, p), n = Math.max(1, daysBetween(p.date, s.date));
+      const dT = r2(c.net - pc.net), dU = r2(c.netUsd - pc.netUsd);
+      d = `<p class="meta">Önceki kayda göre (${n} gün): <span class="${cls(dT)}">${sgn(dT, tl)}</span> / <span class="${cls(dU)}">${sgn(dU, usd)}</span>, günlük ort. ${sgn(r2(dT / n), tl)}</p>`;
+    }
+    return `<div class="log">
+      <div class="head"><p>${dmy(s.date)} <span class="note">${wday(s.date)}</span></p>
+        <span>
+          <button class="btn small" data-view="${s.date}" type="button">Özette aç</button>
+          <button class="btn small" data-edit="${s.date}" type="button">Düzenle</button>
+          <button class="btn small danger" data-del="${s.date}" type="button" ${list.length < 2 ? 'disabled' : ''}>Sil</button>
+        </span></div>
+      <p style="margin:4px 0 0">Fon Net <b>${tl(c.net)}</b> (${usd(c.netUsd)}) · Batuhan brüt: ${tl(c.Y.value)} (net ${tl(c.Y.net)}) · Aybüke brüt: ${tl(c.T.value)} (net ${tl(c.T.net)})</p>
+      <p class="meta">Genel toplam (Fon + Nakit + Dolar): ${tl(c.netAll)} (${usd(c.netAllUsd)})</p>
+      ${d}
+      <p class="meta">Kur ${nf(4).format(s.fx)} (${esc(s.fxSrc || 'Elle girildi')}). YPT ${nf(6).format(s.pY)}${s.estY ? '<span class="tag">tahmini</span>' : ''}, TZL ${nf(6).format(s.pT)}${s.estT ? '<span class="tag">tahmini</span>' : ''}. Günlük ${pct(s.rY, 4)} / ${pct(s.rT, 4)}${s.note ? ' · Not: ' + esc(s.note) : ''}</p>
+    </div>`;
+  }).reverse().join('');
+  $('#tab-kayit').innerHTML = `<div class="panel"><h2>Kayıtlar</h2><p class="note" style="margin:2px 0 10px">${list.length} kayıtlı gün.</p>${rows}</div>`;
+  $('#tab-kayit').querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+    summaryDate = b.dataset.view === todayStr() ? null : b.dataset.view;
+    cmpEndDate = b.dataset.view;
+    renderSummary();
+    switchTab('ozet');
+  }));
+  $('#tab-kayit').querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => { fillForm(b.dataset.edit); switchTab('guncelle'); }));
+  $('#tab-kayit').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => confirmTwice(b, 'Sil', () => {
+    S.snaps = S.snaps.filter(x => x.date !== b.dataset.del); persist(); renderAll(); toast('Kayıt silindi');
+  })));
+}
+
+function renderAll() { renderSummary(); renderLog(); fillSettings(); if (tab === 'proj') renderProjection(); if (tab === 'takvim') renderCalendar(); }
+
+(async function init() {
+  let saved = await store.load();
+  if (!saved) {
+    const old = await store.loadOld();
+    if (old && old.base && old.base.other) {
+      const o = old.base.other;
+      old.base.other = { bCash: o.bCash ?? o.cash ?? 0, bFx: o.bFx ?? o.fx ?? 0, bStock: o.bStock ?? o.stock ?? 0, aCash: o.aCash ?? DEFAULTS.base.other.aCash, bUsd: o.bUsd ?? 0, aUsd: o.aUsd ?? 0 };
+      saved = old;
+    }
+  }
+  if (saved && valid(saved)) {
+    saved.base.other = Object.assign({ bUsd: 0, aUsd: 0 }, saved.base.other);
+    // 06.11.2026 Cuma (23.307.635,45 TL YPT brüt) ve 09.11.2026 Pazartesi (23.374.193,77 TL YPT brüt) kayıtlarını eksiksiz eşitle
+    if (Array.isArray(saved.snaps)) {
+      saved.snaps = saved.snaps.filter(s => !( (s.date === '2026-11-06' || s.date === '2026-11-09') && Math.abs(s.pY - 4.467643) < 1e-6 ));
+      if (!saved.snaps.some(s => s.date === '2026-11-06')) {
+        saved.snaps.push(JSON.parse(JSON.stringify(DEFAULTS.snaps[0])));
+      }
+      if (!saved.snaps.some(s => s.date === '2026-11-09')) {
+        saved.snaps.push(JSON.parse(JSON.stringify(DEFAULTS.snaps[1])));
+      } else {
+        const s09 = saved.snaps.find(s => s.date === '2026-11-09');
+        if (s09 && Math.abs(s09.pY - 4.467643) < 1e-6) {
+          Object.assign(s09, DEFAULTS.snaps[1]);
+        }
+      }
+    }
+    saved.v = 4;
+    S = saved;
+    S.proj = Object.assign({}, DEFAULTS.proj, S.proj || {});
+    persist();
+  }
+  renderAll();
+  fillForm(todayStr() <= END_DATE ? todayStr() : latest().date);
+  refreshLiveRate(false);
+})();
+</script>
+</body>
+</html>
